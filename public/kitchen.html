@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>キッチンディスプレイ</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background-color: #f0f2f5; }
+    header { background-color: #007bff; color: white; padding: 10px 15px; display: flex; justify-content: center; align-items: center; position: sticky; top: 0; z-index: 10; }
+    main { padding: 10px; }
+    .order-list { display: flex; flex-direction: column; gap: 12px; }
+    .order-card { background-color: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; align-items: stretch; }
+    .order-id-box { background-color: #ffc107; color: #333; padding: 10px 15px; border-radius: 8px 0 0 8px; display: flex; align-items: center; font-size: 1.4em; font-weight: bold; }
+    .order-body { padding: 10px 15px; flex-grow: 1; }
+    .order-item { display: flex; align-items: center; gap: 10px; font-size: 1.1em; padding: 5px 0; }
+    .item-checkbox { width: 20px; height: 20px; cursor: pointer; }
+    .item-name.delivered { text-decoration: line-through; color: #888; }
+    .no-orders { text-align: center; width: 100%; font-size: 1.5em; color: #777; margin-top: 50px; }
+    .filter-container { position: relative; display: inline-block; }
+    .filter-button { background: none; border: none; color: white; font-size: 1.2em; cursor: pointer; display: flex; align-items: center; }
+    .filter-button h2 { margin: 0; font-size: 1em; }
+    .filter-dropdown { display: none; position: absolute; background-color: white; color: black; min-width: 200px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 1; border-radius: 5px; padding: 10px; right: 0; max-height: 300px; overflow-y: auto; }
+    .filter-dropdown label { display: block; padding: 8px; cursor: pointer; }
+    .filter-dropdown label:hover { background-color: #f1f1f1; }
+    .filter-dropdown span { color: #888; padding: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="filter-container">
+      <button id="filter-button" class="filter-button">
+        <h2>未提供リスト</h2>
+        <span>▼</span>
+      </button>
+      <div id="filter-dropdown" class="filter-dropdown">
+        </div>
+    </div>
+  </header>
+  <main>
+    <div id="order-container" class="order-list"></div>
+  </main>
+
+  <script>
+    const orderContainer = document.getElementById('order-container');
+    const filterBtn = document.getElementById('filter-button');
+    const filterDropdown = document.getElementById('filter-dropdown');
+
+    let allProducts = [];
+    let selectedProducts = new Set();
+    let cachedOrders = [];
+
+    // フィルターの表示/非表示を切り替え
+    filterBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // 親要素へのイベント伝播を停止
+      filterDropdown.style.display = filterDropdown.style.display === 'block' ? 'none' : 'block';
+    });
+    // ドロップダウンの外側をクリックしたら閉じる
+    window.addEventListener('click', () => {
+      if (filterDropdown.style.display === 'block') {
+        filterDropdown.style.display = 'none';
+      }
+    });
+
+    // ★修正: フィルターを生成する関数（エラー処理を追加）
+    async function populateFilter() {
+      try {
+        const response = await fetch('/api/products');
+        if (!response.ok) throw new Error('商品リストの取得に失敗しました。');
+        
+        allProducts = await response.json();
+        filterDropdown.innerHTML = '';
+
+        if (allProducts.length === 0) {
+          filterDropdown.innerHTML = '<span>登録商品がありません</span>';
+          return;
+        }
+
+        allProducts.forEach(product => {
+          const label = document.createElement('label');
+          label.innerHTML = `<input type="checkbox" class="product-filter-cb" value="${product.id}"> ${product.name}`;
+          // チェックボックスのクリックがドロップダウンを閉じるのを防ぐ
+          label.addEventListener('click', e => e.stopPropagation());
+          filterDropdown.appendChild(label);
+        });
+
+        document.querySelectorAll('.product-filter-cb').forEach(cb => {
+          cb.addEventListener('change', () => {
+            if (cb.checked) {
+              selectedProducts.add(cb.value);
+            } else {
+              selectedProducts.delete(cb.value);
+            }
+            renderOrders();
+          });
+        });
+      } catch (err) {
+        console.error("フィルター生成エラー:", err);
+        filterDropdown.innerHTML = '<span>読込エラー</span>';
+      }
+    }
+    
+    // 注文リストを描画
+    function renderOrders() {
+      orderContainer.innerHTML = '';
+      const ordersToDisplay = cachedOrders.filter(order => {
+        if (selectedProducts.size === 0) return true;
+        return Object.entries(order.itemStatus).some(([productId, status]) => 
+            status === 'undelivered' && selectedProducts.has(String(productId))
+        );
+      });
+
+      if (ordersToDisplay.length === 0) {
+        orderContainer.innerHTML = '<div class="no-orders">対象の注文はありません</div>';
+        return;
+      }
+
+      ordersToDisplay.forEach(order => {
+        const card = document.createElement('div');
+        card.className = 'order-card';
+        
+        let itemsHtml = '';
+        const uniqueItems = [...new Map(order.items.map(item => [item.id, item])).values()];
+        
+        uniqueItems.forEach(item => {
+          const isDelivered = order.itemStatus[item.id] === 'delivered';
+          // 絞り込みが有効な場合、選択された商品でなければ表示しない
+          if (selectedProducts.size > 0 && !selectedProducts.has(String(item.id))) {
+            return;
+          }
+          itemsHtml += `<div class="order-item"><input type="checkbox" class="item-checkbox" data-order-id="${order.id}" data-product-id="${item.id}" ${isDelivered ? 'checked disabled' : ''}><span class="item-name ${isDelivered ? 'delivered' : ''}">${item.name}</span></div>`;
+        });
+        
+        // 表示する商品がない場合はカード自体を描画しない
+        if (itemsHtml === '') return;
+
+        card.innerHTML = `<div class="order-id-box">#${order.id}</div><div class="order-body">${itemsHtml}</div>`;
+        orderContainer.appendChild(card);
+      });
+
+      document.querySelectorAll('.item-checkbox').forEach(cb => {
+        cb.addEventListener('change', async () => {
+          if (cb.checked) {
+            cb.disabled = true;
+            await fetch(`/api/kitchen/order/${cb.dataset.orderId}/item/${cb.dataset.productId}/complete`, { method: 'POST' });
+            fetchUndeliveredOrders();
+          }
+        });
+      });
+    }
+
+    // 最新の注文データを取得
+    async function fetchUndeliveredOrders() {
+      try {
+        const response = await fetch('/api/kitchen/undelivered');
+        if (!response.ok) throw new Error('注文リストの取得に失敗しました。');
+        cachedOrders = await response.json();
+        renderOrders();
+      } catch (err) {
+        console.error("注文の取得に失敗:", err);
+      }
+    }
+
+    // 初期化
+    async function initialize() {
+      await populateFilter();
+      await fetchUndeliveredOrders();
+      setInterval(fetchUndeliveredOrders, 5000);
+    }
+
+    initialize();
+  </script>
+</body>
+</html>

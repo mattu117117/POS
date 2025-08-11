@@ -1,0 +1,177 @@
+body {
+  font-family: sans-serif;
+  background: #f4f4f4;
+  margin: 0;
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+.products-panel {
+  width: 65%;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.cart-panel {
+  width: 35%;
+  padding: 20px;
+  background: #fff;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 100px;
+  gap: 10px;
+}
+
+.product-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 5px;
+  box-sizing: border-box;
+  overflow: hidden;
+  /* 背景色はJavaScriptで設定される */
+}
+
+.product-card h4 {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+.product-card p {
+  margin: 5px 0 0 0;
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+.product-card:hover {
+  border-color: #007bff;
+}
+
+h2 {
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+}
+
+#cart-items {
+  list-style: none;
+  padding: 0;
+  flex-grow: 1;
+}
+
+#cart-items li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.total {
+  font-size: 1.5em;
+  text-align: right;
+}
+
+button {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.2em;
+  cursor: pointer;
+}
+
+#checkout-button {
+  background-color: #28a745;
+  color: white;
+  margin-top: 15px;
+}
+
+.cart-item-details {
+  flex-grow: 1;
+}
+
+.delete-item-btn {
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+  padding: 0 5px;
+  color: #888;
+}
+
+.delete-item-btn:hover {
+  color: #dc3545;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: flex-end;
+  margin: 10px 0;
+}
+
+.discount-section label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+  color: #555;
+}
+
+.discount-section input {
+  width: 100%;
+  padding: 10px;
+  font-size: 1.1em;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  box-sizing: border-box;
+  text-align: right;
+}
+
+#kitchen-link,
+#admin-link {
+  display: block;
+  background-color: #007bff;
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  padding: 12px;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+
+#admin-link {
+  background-color: #6c757d;
+}
+
+/* 管理画面のCSVボタン用スタイル (admin.html内で定義済みのため、共通化する場合はここに移動) */
+.download-btn-admin {
+  display: inline-block;
+  background-color: #17a2b8;
+  color: white;
+  padding: 10px 15px;
+  text-decoration: none;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+/* レジ画面の注文ID表示用 */
+.order-id-display {
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #007bff;
+  margin-left: 10px;
+}

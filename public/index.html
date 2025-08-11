@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学園祭レジシステム</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="products-panel">
+      <h2>商品リスト</h2>
+      <div id="product-list" class="grid-container"></div>
+    </div>
+    <div class="cart-panel">
+      <h2>会計 <span id="next-order-id" class="order-id-display"></span></h2>
+      <ul id="cart-items"></ul>
+      <hr>
+      <div class="summary-grid">
+        <div class="discount-section">
+          <label for="discount-input">割引額 (円)</label>
+          <input type="number" id="discount-input" placeholder="0">
+        </div>
+        <div class="total">
+          <strong>合計: <span id="cart-total">0</span> 円</strong>
+        </div>
+      </div>
+      <button id="checkout-button">会計完了</button>
+      <a href="/kitchen.html" target="_blank" id="kitchen-link">キッチン画面を開く</a>
+      <a href="/admin.html" target="_blank" id="admin-link">管理画面を開く</a>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

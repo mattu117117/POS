@@ -1,0 +1,54 @@
+[
+  {
+    "id": 1,
+    "items": [
+      {
+        "id": 2,
+        "name": "ナタデココ",
+        "price": 500,
+        "color": "#eedcb3"
+      },
+      {
+        "id": 1,
+        "name": "タピオカ",
+        "price": 500,
+        "color": "#ffa3a3"
+      }
+    ],
+    "itemStatus": {
+      "1": "delivered",
+      "2": "delivered"
+    },
+    "total": 1000,
+    "discount": 0,
+    "finalTotal": 1000,
+    "status": "提供済み",
+    "createdAt": "2025-08-10T21:17:38.067Z"
+  },
+  {
+    "id": 2,
+    "items": [
+      {
+        "id": 1,
+        "name": "タピオカ",
+        "price": 500,
+        "color": "#ffa3a3"
+      },
+      {
+        "id": 2,
+        "name": "ナタデココ",
+        "price": 500,
+        "color": "#eedcb3"
+      }
+    ],
+    "itemStatus": {
+      "1": "delivered",
+      "2": "delivered"
+    },
+    "total": 1000,
+    "discount": 0,
+    "finalTotal": 1000,
+    "status": "提供済み",
+    "createdAt": "2025-08-10T21:18:04.257Z"
+  }
+]

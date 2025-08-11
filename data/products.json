@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "name": "タピオカ",
+    "price": 500,
+    "color": "#ffa3a3"
+  },
+  {
+    "id": 2,
+    "name": "ナタデココ",
+    "price": 500,
+    "color": "#eedcb3"
+  }
+]

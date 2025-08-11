@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理画面</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background-color: #f9f9f9; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .section { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 30px;}
+    h1, h2 { border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
+    th { background-color: #f2f2f2; }
+    .delete-btn { background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
+    .delete-btn:hover { background: #c82333; }
+    .download-btn-admin { display: inline-block; background-color: #17a2b8; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; margin-bottom: 20px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: flex-end; margin-top: 15px; }
+    .form-grid input { width: 100%; padding: 10px; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;}
+    .form-grid button { background: #007bff; color: white; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; font-size: 1em;}
+    .form-grid button:hover { background: #0056b3; }
+    .color-picker { display: flex; gap: 10px; margin-top: 5px; }
+    .color-box { width: 30px; height: 30px; border-radius: 5px; cursor: pointer; border: 2px solid transparent; }
+    .color-box.selected { border-color: #007bff; }
+    .color-swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>管理画面</h1>
+    <a href="/api/sales/csv" class="download-btn-admin">全売上データをダウンロード (CSV)</a>
+
+    <div class="section">
+      <h2>商品管理</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>商品名</th>
+            <th>価格</th>
+            <th>色</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="product-list-body"></tbody>
+      </table>
+      <form id="add-product-form">
+        <div class="form-grid">
+          <div><label for="product-name">商品名</label><input type="text" id="product-name" required></div>
+          <div><label for="product-price">価格（円）</label><input type="number" id="product-price" required></div>
+          <button type="submit">追加</button>
+        </div>
+        <div style="margin-top: 15px;"><label>色選択</label><div id="color-picker" class="color-picker"></div></div>
+      </form>
+    </div>
+
+    <div class="section">
+      <h2>会計履歴</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>会計ID</th>
+            <th>日時</th>
+            <th>合計金額</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const historyBody = document.getElementById('history-body');
+    const productListBody = document.getElementById('product-list-body');
+    const addProductForm = document.getElementById('add-product-form');
+    const colorPicker = document.getElementById('color-picker');
+
+    const colors = ['#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF', '#E0BBE4', '#D5A6BD', '#A6D5D5'];
+    let selectedColor = colors[0];
+
+    function createColorPicker() {
+      colorPicker.innerHTML = '';
+      colors.forEach((color, index) => {
+        const box = document.createElement('div');
+        box.className = 'color-box';
+        box.style.backgroundColor = color;
+        if (index === 0) box.classList.add('selected');
+        box.addEventListener('click', () => {
+          document.querySelector('.color-box.selected').classList.remove('selected');
+          box.classList.add('selected');
+          selectedColor = color;
+        });
+        colorPicker.appendChild(box);
+      });
+    }
+
+    async function fetchSalesHistory() {
+      const response = await fetch('/api/sales/history');
+      const sales = await response.json();
+      historyBody.innerHTML = '';
+      sales.forEach(sale => {
+        const row = document.createElement('tr');
+        row.id = `sale-row-${sale.id}`;
+        row.innerHTML = `<td>#${sale.id}</td><td>${new Date(sale.createdAt).toLocaleString('ja-JP')}</td><td>${sale.finalTotal} 円</td><td><button class="delete-btn" onclick="deleteSale(${sale.id})">削除</button></td>`;
+        historyBody.appendChild(row);
+      });
+    }
+
+    // ★会計削除のロジックを修正
+    async function deleteSale(id) {
+      if (!confirm(`会計ID #${id} を本当に削除しますか？\nこの操作は元に戻せません。`)) return;
+      const response = await fetch(`/api/sales/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        fetchSalesHistory(); // 削除成功後、リスト全体を再読み込みする
+      } else {
+        alert('削除に失敗しました。');
+      }
+    }
+
+    async function fetchProducts() {
+      const response = await fetch('/api/products');
+      const products = await response.json();
+      productListBody.innerHTML = '';
+      products.forEach(product => {
+        const row = document.createElement('tr');
+        row.id = `product-row-${product.id}`;
+        row.innerHTML = `<td>${product.name}</td><td>${product.price} 円</td><td><div class="color-swatch" style="background-color: ${product.color};"></div></td><td><button class="delete-btn" onclick="deleteProduct(${product.id})">削除</button></td>`;
+        productListBody.appendChild(row);
+      });
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm(`この商品を本当に削除しますか？`)) return;
+      const response = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      if (response.ok) { fetchProducts(); }
+      else { alert('削除に失敗しました。'); }
+    }
+
+    addProductForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nameInput = document.getElementById('product-name');
+      const priceInput = document.getElementById('product-price');
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nameInput.value, price: priceInput.value, color: selectedColor })
+      });
+      if (response.ok) {
+        fetchProducts();
+        nameInput.value = '';
+        priceInput.value = '';
+      } else { alert('商品の追加に失敗しました。'); }
+    });
+
+    createColorPicker();
+    fetchSalesHistory();
+    fetchProducts();
+  </script>
+</body>
+</html>
