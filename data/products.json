@@ -3,12 +3,18 @@
     "id": 1,
     "name": "タピオカ",
     "price": 500,
-    "color": "#ffa3a3"
+    "color": "#FFB3BA"
   },
   {
     "id": 2,
     "name": "ナタデココ",
-    "price": 500,
-    "color": "#eedcb3"
+    "price": 400,
+    "color": "#FFDFBA"
+  },
+  {
+    "id": 3,
+    "name": "ポテト",
+    "price": 300,
+    "color": "#FFFFBA"
   }
 ]

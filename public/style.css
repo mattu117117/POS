@@ -175,3 +175,73 @@ button {
   color: #007bff;
   margin-left: 10px;
 }
+
+
+
+/* カートの各行の基本設定 */
+#cart-items li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+}
+
+/* 商品名をまとめる左側のコンテナ */
+.cart-item-info {
+  flex-grow: 1;
+}
+
+/* 商品名 */
+.item-name {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+/* 操作ボタン類をまとめる右側のコンテナ */
+.cart-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* 各要素間の余白 */
+}
+
+/* 数量表示 */
+.item-quantity {
+  display: inline-block;
+  width: 25px; /* 幅を固定してガタつきを防ぐ */
+  text-align: center;
+  font-size: 1.1em;
+}
+
+/* +/- ボタンの共通スタイル */
+.quantity-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #ccc;
+  border-radius: 50%; /* 円形にする */
+  background-color: #f9f9f9;
+  color: #333;
+  font-size: 1.2em;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  line-height: 28px; /* 上下中央揃え */
+}
+
+.quantity-btn:hover {
+  background-color: #eee;
+}
+
+/* 金額 */
+.item-price {
+  min-width: 80px;
+  text-align: right;
+  font-size: 1.1em;
+  margin-left: 10px;
+}
+
+/* 削除ボタンの画像 */
+.delete-item-btn img {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+}

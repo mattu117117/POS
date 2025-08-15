@@ -14,6 +14,8 @@
     th { background-color: #f2f2f2; }
     .delete-btn { background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
     .delete-btn:hover { background: #c82333; }
+    .edit-btn { background: #ffc107; color: black; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; margin-right: 5px;}
+    .edit-btn:hover { background: #e0a800; }
     .download-btn-admin { display: inline-block; background-color: #17a2b8; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; margin-bottom: 20px; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: flex-end; margin-top: 15px; }
     .form-grid input { width: 100%; padding: 10px; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;}
@@ -23,24 +25,18 @@
     .color-box { width: 30px; height: 30px; border-radius: 5px; cursor: pointer; border: 2px solid transparent; }
     .color-box.selected { border-color: #007bff; }
     .color-swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ccc; }
+    td ul { margin: 0; padding-left: 20px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>管理画面</h1>
-    <a href="/api/sales/csv" class="download-btn-admin">全売上データをダウンロード (CSV)</a>
+    
 
     <div class="section">
       <h2>商品管理</h2>
       <table>
-        <thead>
-          <tr>
-            <th>商品名</th>
-            <th>価格</th>
-            <th>色</th>
-            <th>操作</th>
-          </tr>
-        </thead>
+        
         <tbody id="product-list-body"></tbody>
       </table>
       <form id="add-product-form">
@@ -53,8 +49,20 @@
       </form>
     </div>
 
+<a href="/api/sales/csv" class="download-btn-admin">全売上データをダウンロード (CSV)</a>
+
     <div class="section">
       <h2>会計履歴</h2>
+      
+      <div id="bulk-delete-section" style="padding: 15px; background: #f8d7da; border: 1px solid #f5c6cb; margin-bottom: 15px; border-radius: 5px;">
+        <h4>期間指定で一括削除</h4>
+        <label for="start-date">開始日時:</label>
+        <input type="datetime-local" id="start-date">
+        <label for="end-date">終了日時:</label>
+        <input type="datetime-local" id="end-date">
+        <button id="bulk-delete-btn" class="delete-btn" style="width: auto; margin-left: 10px;">この範囲の履歴を削除</button>
+      </div>
+      
       <table>
         <thead>
           <tr>
@@ -69,6 +77,19 @@
     </div>
   </div>
 
+  <div id="edit-modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
+      <div style="background: white; width: 90%; max-width: 600px; padding: 20px; border-radius: 8px;">
+          <h3>会計内容の変更 <span id="edit-sale-id"></span></h3>
+          <div id="edit-item-list" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;"></div>
+          <button id="add-item-to-sale-btn">商品を追加</button> <hr>
+          <button id="save-changes-btn">保存</button>
+          <button onclick="document.getElementById('edit-modal').style.display='none'">キャンセル</button>
+      </div>
+  </div>
+
+
+
+
   <script>
     const historyBody = document.getElementById('history-body');
     const productListBody = document.getElementById('product-list-body');
@@ -77,6 +98,9 @@
 
     const colors = ['#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF', '#E0BBE4', '#D5A6BD', '#A6D5D5'];
     let selectedColor = colors[0];
+    
+    // --- 追加：最新の会計IDを保持する変数 ---
+    let latestSaleId = null; 
 
     function createColorPicker() {
       colorPicker.innerHTML = '';
@@ -94,27 +118,103 @@
       });
     }
 
-    async function fetchSalesHistory() {
+    // --- 修正：fetchSalesHistory関数 ---
+    // forceRerender引数を追加し、変更があった場合のみ再描画するように変更
+    async function fetchSalesHistory(forceRerender = false) {
       const response = await fetch('/api/sales/history');
       const sales = await response.json();
-      historyBody.innerHTML = '';
+      
+      // 新しい会計がない場合は再描画しない (ただし強制リロードは除く)
+      if (!forceRerender && sales.length > 0 && sales[0].id === latestSaleId) {
+        return; 
+      }
+      
+      if (sales.length > 0) {
+        latestSaleId = sales[0].id;
+      }
+
+      const openDetails = new Set();
+      document.querySelectorAll('.history-details[style*="block"]').forEach(el => {
+          openDetails.add(el.id);
+      });
+
+      historyBody.innerHTML = ''; // テーブルのtbodyをクリア
+
       sales.forEach(sale => {
-        const row = document.createElement('tr');
-        row.id = `sale-row-${sale.id}`;
-        row.innerHTML = `<td>#${sale.id}</td><td>${new Date(sale.createdAt).toLocaleString('ja-JP')}</td><td>${sale.finalTotal} 円</td><td><button class="delete-btn" onclick="deleteSale(${sale.id})">削除</button></td>`;
-        historyBody.appendChild(row);
+        const mainRow = document.createElement('tr');
+        mainRow.id = `sale-row-${sale.id}`;
+        mainRow.style.cursor = 'pointer';
+        mainRow.innerHTML = `
+            <td>#${sale.id} <span class="accordion-arrow">▾</span></td>
+            <td>${new Date(sale.createdAt).toLocaleString('ja-JP')}</td>
+            <td>${sale.finalTotal} 円</td>
+            <td>
+                <button class="edit-btn" data-id="${sale.id}">変更</button>
+                <button class="delete-btn" data-id="${sale.id}">削除</button>
+            </td>
+        `;
+
+        const detailRow = document.createElement('tr');
+        const detailRowId = `sale-detail-${sale.id}`;
+        detailRow.id = detailRowId;
+        detailRow.className = 'history-details';
+        
+        const itemCounts = sale.items.reduce((acc, item) => {
+            acc[item.name] = { price: item.price, count: (acc[item.name] ? acc[item.name].count : 0) + 1 };
+            return acc;
+        }, {});
+
+        let detailsHtml = '<ul>';
+        for (const name in itemCounts) {
+            const item = itemCounts[name];
+            detailsHtml += `<li>・${name}: ¥${item.price} x ${item.count} = ¥${item.price * item.count}</li>`;
+        }
+        detailsHtml += '</ul>';
+
+        const detailCell = document.createElement('td');
+        detailCell.colSpan = 4;
+        detailCell.innerHTML = detailsHtml;
+        detailRow.appendChild(detailCell);
+
+        historyBody.appendChild(mainRow);
+        historyBody.appendChild(detailRow);
+
+        mainRow.addEventListener('click', (event) => {
+            if (event.target.classList.contains('delete-btn') || event.target.classList.contains('edit-btn')) {
+                return;
+            }
+            const isHidden = detailRow.style.display === 'none';
+            detailRow.style.display = isHidden ? '' : 'none';
+            mainRow.querySelector('.accordion-arrow').textContent = isHidden ? '▴' : '▾';
+        });
       });
     }
+    
+    historyBody.addEventListener('click', async function(event) {
+        if (event.target.classList.contains('delete-btn')) {
+            const saleId = event.target.dataset.id;
+            deleteSale(saleId);
+        } else if (event.target.classList.contains('edit-btn')) {
+            const saleId = event.target.dataset.id;
+            const response = await fetch('/api/sales/history');
+            const sales = await response.json();
+            const saleData = sales.find(s => s.id == saleId);
+            openEditModal(saleData);
+        }
+    });
 
-    // ★会計削除のロジックを修正
     async function deleteSale(id) {
       if (!confirm(`会計ID #${id} を本当に削除しますか？\nこの操作は元に戻せません。`)) return;
       const response = await fetch(`/api/sales/${id}`, { method: 'DELETE' });
       if (response.ok) {
-        fetchSalesHistory(); // 削除成功後、リスト全体を再読み込みする
+        fetchSalesHistory(true); // 強制的に再描画
       } else {
         alert('削除に失敗しました。');
       }
+    }
+
+    function openEditModal(saleData) {
+        alert('変更機能は現在実装中です。');
     }
 
     async function fetchProducts() {
@@ -152,9 +252,42 @@
       } else { alert('商品の追加に失敗しました。'); }
     });
 
-    createColorPicker();
-    fetchSalesHistory();
-    fetchProducts();
+    document.getElementById('bulk-delete-btn').addEventListener('click', async () => {
+        const start = document.getElementById('start-date').value;
+        const end = document.getElementById('end-date').value;
+
+        if (!start || !end) {
+            alert('開始日時と終了日時を両方選択してください。');
+            return;
+        }
+
+        const confirmation = confirm(`本当に ${new Date(start).toLocaleString()} から ${new Date(end).toLocaleString()} までの履歴をすべて削除しますか？\nこの操作は元に戻せません。`);
+
+        if (confirmation) {
+            try {
+                const response = await fetch(`/api/sales?start=${start}&end=${end}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                alert(result.message);
+                fetchSalesHistory(true); // 強制的に再描画
+            } catch (err) {
+                alert('エラーが発生しました。');
+            }
+        }
+    });
+
+    // --- 修正：初期化関数 ---
+    async function initializeAdminPage() {
+      createColorPicker();
+      fetchProducts();
+      await fetchSalesHistory(); // 最初に一度読み込む
+
+      // 5秒ごとに会計履歴を自動更新
+      setInterval(() => fetchSalesHistory(false), 5000);
+    }
+
+    initializeAdminPage();
   </script>
 </body>
 </html>

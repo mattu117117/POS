@@ -48,20 +48,103 @@
     let allProducts = [];
     let selectedProducts = new Set();
     let cachedOrders = [];
+    
+    // --- ▼ここから追加・変更点▼ ---
+
+    // 1. 表示済み注文IDを記録し、新しい注文を検知するための変数
+    let displayedOrderIds = new Set();
+    // 2. 音を再生するためのAudioContextを準備
+    let audioContext;
+
+    // 3. 通知音を再生する関数
+    function playNotificationSound() {
+      // AudioContextが準備できていなければ何もしない
+      if (!audioContext) return;
+      
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.type = 'sine'; // シンプルなサイン波
+      oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // 通知音の高さ (Hz)
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime); // ボリューム (0~1)
+
+      oscillator.start(audioContext.currentTime);
+      // 0.5秒かけて音を消す
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.5);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    }
+
+    // 4. 最新の注文データを取得し、変更があれば音を鳴らす関数 (主要な変更箇所)
+    async function fetchUndeliveredOrders() {
+      try {
+        const response = await fetch('/api/kitchen/undelivered');
+        if (!response.ok) throw new Error('注文リストの取得に失敗しました。');
+        cachedOrders = await response.json();
+        
+        // --- 通知音を鳴らす判定ロジック ---
+        const currentOrderIds = new Set(cachedOrders.map(order => order.id));
+        const newOrders = cachedOrders.filter(order => !displayedOrderIds.has(order.id));
+
+        // 新しい注文が1件以上ある場合
+        if (newOrders.length > 0) {
+            const isFilterActive = selectedProducts.size > 0;
+            
+            // 新しい注文の中に、現在のフィルター条件に合致するものが存在するかチェック
+            const relevantNewOrderExists = newOrders.some(order => {
+                // フィルターが掛かっていない場合は、全ての新規注文が通知対象
+                if (!isFilterActive) {
+                    return true;
+                }
+                // フィルターが掛かっている場合は、注文商品にフィルター対象商品が含まれるかチェック
+                return Object.keys(order.itemStatus).some(productId => selectedProducts.has(String(productId)));
+            });
+
+            if (relevantNewOrderExists) {
+                playNotificationSound();
+            }
+        }
+        
+        // 今回取得した注文IDを「表示済み」として更新
+        displayedOrderIds = currentOrderIds;
+        
+        // 注文リストを描画（これは既存の処理）
+        renderOrders();
+      } catch (err) {
+        console.error("注文の取得に失敗:", err);
+      }
+    }
+    
+    // 5. 初期化処理の変更
+    async function initialize() {
+      // ブラウザの自動再生ポリシー対策として、最初のクリックでAudioContextを生成
+      document.body.addEventListener('click', () => {
+          if (!audioContext) {
+              audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          }
+      }, { once: true });
+
+      await populateFilter();
+      await fetchUndeliveredOrders();
+      setInterval(fetchUndeliveredOrders, 5000); // 5秒ごとに更新を確認
+    }
+    
+    // --- ▲ここまで追加・変更点▲ ---
+
 
     // フィルターの表示/非表示を切り替え
     filterBtn.addEventListener('click', (e) => {
-      e.stopPropagation(); // 親要素へのイベント伝播を停止
+      e.stopPropagation();
       filterDropdown.style.display = filterDropdown.style.display === 'block' ? 'none' : 'block';
     });
-    // ドロップダウンの外側をクリックしたら閉じる
     window.addEventListener('click', () => {
       if (filterDropdown.style.display === 'block') {
         filterDropdown.style.display = 'none';
       }
     });
 
-    // ★修正: フィルターを生成する関数（エラー処理を追加）
     async function populateFilter() {
       try {
         const response = await fetch('/api/products');
@@ -78,7 +161,6 @@
         allProducts.forEach(product => {
           const label = document.createElement('label');
           label.innerHTML = `<input type="checkbox" class="product-filter-cb" value="${product.id}"> ${product.name}`;
-          // チェックボックスのクリックがドロップダウンを閉じるのを防ぐ
           label.addEventListener('click', e => e.stopPropagation());
           filterDropdown.appendChild(label);
         });
@@ -99,7 +181,6 @@
       }
     }
     
-    // 注文リストを描画
     function renderOrders() {
       orderContainer.innerHTML = '';
       const ordersToDisplay = cachedOrders.filter(order => {
@@ -123,14 +204,12 @@
         
         uniqueItems.forEach(item => {
           const isDelivered = order.itemStatus[item.id] === 'delivered';
-          // 絞り込みが有効な場合、選択された商品でなければ表示しない
           if (selectedProducts.size > 0 && !selectedProducts.has(String(item.id))) {
             return;
           }
           itemsHtml += `<div class="order-item"><input type="checkbox" class="item-checkbox" data-order-id="${order.id}" data-product-id="${item.id}" ${isDelivered ? 'checked disabled' : ''}><span class="item-name ${isDelivered ? 'delivered' : ''}">${item.name}</span></div>`;
         });
         
-        // 表示する商品がない場合はカード自体を描画しない
         if (itemsHtml === '') return;
 
         card.innerHTML = `<div class="order-id-box">#${order.id}</div><div class="order-body">${itemsHtml}</div>`;
@@ -148,25 +227,7 @@
       });
     }
 
-    // 最新の注文データを取得
-    async function fetchUndeliveredOrders() {
-      try {
-        const response = await fetch('/api/kitchen/undelivered');
-        if (!response.ok) throw new Error('注文リストの取得に失敗しました。');
-        cachedOrders = await response.json();
-        renderOrders();
-      } catch (err) {
-        console.error("注文の取得に失敗:", err);
-      }
-    }
-
-    // 初期化
-    async function initialize() {
-      await populateFilter();
-      await fetchUndeliveredOrders();
-      setInterval(fetchUndeliveredOrders, 5000);
-    }
-
+    // 初期化関数を呼び出す
     initialize();
   </script>
 </body>

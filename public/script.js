@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const nextOrderIdSpan = document.getElementById('next-order-id');
 
   let cart = [];
+  let products = []; // 商品リストをキャッシュする配列
 
   async function fetchNextOrderId() {
     try {
@@ -20,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function fetchProducts() {
     const response = await fetch('/api/products');
-    const products = await response.json();
+    products = await response.json(); // 取得した商品リストをキャッシュ
     productList.innerHTML = '';
     products.forEach(product => {
       const card = document.createElement('div');
@@ -32,13 +33,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // --- ▼ここから関数を大幅に変更・追加▼ ---
+
+  // カートに商品を追加（既存の関数）
   function addToCart(product) {
     cart.push(product);
     renderCart();
   }
 
+  // (新規追加) カート内の商品を1つ増やす
+  function increaseQuantity(productId) {
+    const productToAdd = products.find(p => p.id === productId);
+    if (productToAdd) {
+      cart.push(productToAdd);
+      renderCart();
+    }
+  }
+
+  // (新規追加) カート内の商品を1つ減らす
+  function decreaseQuantity(productId) {
+    const itemIndex = cart.findIndex(item => item.id === productId);
+    if (itemIndex > -1) {
+      cart.splice(itemIndex, 1);
+      renderCart();
+    }
+  }
+  
+  // (既存の関数) 特定の商品をカートから全て削除する
   function deleteProductFromCart(productId) {
-    // 同じIDの商品を全てカートから削除する
     cart = cart.filter(item => item.id !== productId);
     renderCart();
   }
@@ -49,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let total = 0;
     const itemCounts = {};
 
-    // 商品ごとに個数を集計
     cart.forEach(item => {
       itemCounts[item.id] = (itemCounts[item.id] || 0) + 1;
     });
@@ -61,31 +82,51 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemTotal = item.price * count;
         total += itemTotal;
         const li = document.createElement('li');
-        // li.className = 'cart-item'; // style.cssで直接指定するため不要
+        
+        // HTML構造を数量変更ボタン付きのものに変更
         li.innerHTML = `
-          <div class="cart-item-details">${item.name} x ${count}</div>
-          <span class="item-price">${itemTotal}円</span>
-          <button class="delete-item-btn" data-id="${item.id}">
-            <img src="trash-icon.png" alt="削除" style="width:20px; height:20px; vertical-align:middle;">
-          </button>
+          <div class="cart-item-info">
+            <span class="item-name">${item.name}</span>
+          </div>
+          <div class="cart-item-controls">
+            <button class="quantity-btn" data-id="${item.id}" data-action="decrease">-</button>
+            <span class="item-quantity">${count}</span>
+            <button class="quantity-btn" data-id="${item.id}" data-action="increase">+</button>
+            <span class="item-price">${itemTotal.toLocaleString()}円</span>
+            <button class="delete-item-btn" data-id="${item.id}">
+              <img src="trash-icon.png" alt="削除">
+            </button>
+          </div>
         `;
         cartItems.appendChild(li);
     });
     
-    // ゴミ箱ボタンにイベントリスナーを再設定
-    document.querySelectorAll('.delete-item-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            // dataset.idは文字列なのでparseIntで数値に変換
-            const productId = parseInt(e.currentTarget.dataset.id, 10);
-            deleteProductFromCart(productId);
-        });
-    });
-
     const discount = parseInt(discountInput.value) || 0;
     const finalTotal = total - discount;
-    cartTotal.textContent = finalTotal < 0 ? 0 : finalTotal;
+    cartTotal.textContent = finalTotal < 0 ? 0 : finalTotal.toLocaleString();
   }
   
+  // (新規追加) イベント委任を使ってカートのボタン操作をまとめて処理
+  cartItems.addEventListener('click', (e) => {
+    const target = e.target.closest('button');
+    if (!target) return; // ボタン以外がクリックされた場合は何もしない
+
+    const productId = parseInt(target.dataset.id, 10);
+
+    if (target.classList.contains('quantity-btn')) {
+      const action = target.dataset.action;
+      if (action === 'increase') {
+        increaseQuantity(productId);
+      } else if (action === 'decrease') {
+        decreaseQuantity(productId);
+      }
+    } else if (target.classList.contains('delete-item-btn')) {
+      deleteProductFromCart(productId);
+    }
+  });
+
+  // --- ▲ここまで関数を大幅に変更・追加▲ ---
+
   checkoutButton.addEventListener('click', async () => {
     if (cart.length === 0) { alert('カートが空です。'); return; }
     const total = cart.reduce((sum, item) => sum + item.price, 0);
@@ -112,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   discountInput.addEventListener('input', renderCart);
   
-  // 初期読み込み
   fetchProducts();
   fetchNextOrderId();
 });
