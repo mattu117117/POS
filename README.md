@@ -1,8 +1,3 @@
-学園祭向けPOSレジシステム (Gakuensai-POS)
-学園祭や模擬店といった小規模イベントでの利用を想定した、シンプルで直感的に操作できるWebベースのPOSレジシステムです。
-
-
-
 Gakuensai-POS: A Simple POS System for School Festivals
 
 <img width="2868" height="1452" alt="image" src="https://github.com/user-attachments/assets/69bc5e06-12ac-477a-9148-c9fa55011bf8" />
