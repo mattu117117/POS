@@ -16,12 +16,12 @@
     .delete-btn:hover { background: #c82333; }
     .edit-btn { background: #ffc107; color: black; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; margin-right: 5px;}
     .edit-btn:hover { background: #e0a800; }
-    .download-btn-admin { display: inline-block; background-color: #17a2b8; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; margin-bottom: 20px; }
+    .download-btn-admin { display: inline-block; background-color: #17a2b8; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: flex-end; margin-top: 15px; }
     .form-grid input { width: 100%; padding: 10px; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;}
     .form-grid button { background: #007bff; color: white; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; font-size: 1em;}
     .form-grid button:hover { background: #0056b3; }
-    .color-picker { display: flex; gap: 10px; margin-top: 5px; }
+    .color-picker { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px; }
     .color-box { width: 30px; height: 30px; border-radius: 5px; cursor: pointer; border: 2px solid transparent; }
     .color-box.selected { border-color: #007bff; }
     .color-swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ccc; }
@@ -31,29 +31,9 @@
 <body>
   <div class="container">
     <h1>管理画面</h1>
-    
-
-    <div class="section">
-      <h2>商品管理</h2>
-      <table>
-        
-        <tbody id="product-list-body"></tbody>
-      </table>
-      <form id="add-product-form">
-        <div class="form-grid">
-          <div><label for="product-name">商品名</label><input type="text" id="product-name" required></div>
-          <div><label for="product-price">価格（円）</label><input type="number" id="product-price" required></div>
-          <button type="submit">追加</button>
-        </div>
-        <div style="margin-top: 15px;"><label>色選択</label><div id="color-picker" class="color-picker"></div></div>
-      </form>
-    </div>
-
-<a href="/api/sales/csv" class="download-btn-admin">全売上データをダウンロード (CSV)</a>
 
     <div class="section">
       <h2>会計履歴</h2>
-      
       <div id="bulk-delete-section" style="padding: 15px; background: #f8d7da; border: 1px solid #f5c6cb; margin-bottom: 15px; border-radius: 5px;">
         <h4>期間指定で一括削除</h4>
         <label for="start-date">開始日時:</label>
@@ -62,7 +42,6 @@
         <input type="datetime-local" id="end-date">
         <button id="bulk-delete-btn" class="delete-btn" style="width: auto; margin-left: 10px;">この範囲の履歴を削除</button>
       </div>
-      
       <table>
         <thead>
           <tr>
@@ -75,20 +54,49 @@
         <tbody id="history-body"></tbody>
       </table>
     </div>
+
+    <div class="section">
+      <h2>商品管理</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>商品名</th>
+            <th>価格</th>
+            <th>色</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="product-list-body"></tbody>
+      </table>
+      <form id="add-product-form">
+        <div class="form-grid">
+          <div><label for="product-name">商品名</label><input type="text" id="product-name" required></div>
+          <div><label for="product-price">価格（円）</label><input type="number" id="product-price" required></div>
+          <button type="submit">追加</button>
+        </div>
+        <div style="margin-top: 15px;"><label>色選択</label><div id="color-picker" class="color-picker"></div></div>
+      </form>
+    </div>
+    
+    <div class="section">
+        <h2>全売上データ</h2>
+        <a href="/api/sales/csv" class="download-btn-admin">売上データをダウンロード (CSV)</a>
+    </div>
   </div>
 
   <div id="edit-modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
       <div style="background: white; width: 90%; max-width: 600px; padding: 20px; border-radius: 8px;">
           <h3>会計内容の変更 <span id="edit-sale-id"></span></h3>
           <div id="edit-item-list" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;"></div>
-          <button id="add-item-to-sale-btn">商品を追加</button> <hr>
-          <button id="save-changes-btn">保存</button>
+          <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <select id="add-product-select" style="flex-grow: 1; padding: 8px;"></select>
+            <button id="add-item-to-sale-btn">商品を追加</button>
+          </div>
+          <hr>
+          <button id="save-changes-btn">この内容で保存</button>
           <button onclick="document.getElementById('edit-modal').style.display='none'">キャンセル</button>
       </div>
   </div>
-
-
-
 
   <script>
     const historyBody = document.getElementById('history-body');
@@ -96,11 +104,11 @@
     const addProductForm = document.getElementById('add-product-form');
     const colorPicker = document.getElementById('color-picker');
 
+    // ★★★ ご指定のカラーパレットに変更 ★★★
     const colors = ['#ff9e9e','#ffa8d3','#c68eff', '#9999ff', '#9eceff', '#a3ffff', '#9eff9e', '#ffff89', '#ffd1a3'];
     let selectedColor = colors[0];
-    
-    // --- 追加：最新の会計IDを保持する変数 ---
-    let latestSaleId = null; 
+    let latestSaleId = null;
+    let allProducts = []; // 全商品リストをキャッシュする
 
     function createColorPicker() {
       colorPicker.innerHTML = '';
@@ -118,28 +126,12 @@
       });
     }
 
-    // --- 修正：fetchSalesHistory関数 ---
-    // forceRerender引数を追加し、変更があった場合のみ再描画するように変更
     async function fetchSalesHistory(forceRerender = false) {
       const response = await fetch('/api/sales/history');
       const sales = await response.json();
-      
-      // 新しい会計がない場合は再描画しない (ただし強制リロードは除く)
-      if (!forceRerender && sales.length > 0 && sales[0].id === latestSaleId) {
-        return; 
-      }
-      
-      if (sales.length > 0) {
-        latestSaleId = sales[0].id;
-      }
-
-      const openDetails = new Set();
-      document.querySelectorAll('.history-details[style*="block"]').forEach(el => {
-          openDetails.add(el.id);
-      });
-
-      historyBody.innerHTML = ''; // テーブルのtbodyをクリア
-
+      if (!forceRerender && sales.length > 0 && sales[0].id === latestSaleId) return;
+      if (sales.length > 0) latestSaleId = sales[0].id;
+      historyBody.innerHTML = '';
       sales.forEach(sale => {
         const mainRow = document.createElement('tr');
         mainRow.id = `sale-row-${sale.id}`;
@@ -148,41 +140,28 @@
             <td>#${sale.id} <span class="accordion-arrow">▾</span></td>
             <td>${new Date(sale.createdAt).toLocaleString('ja-JP')}</td>
             <td>${sale.finalTotal} 円</td>
-            <td>
-                <button class="edit-btn" data-id="${sale.id}">変更</button>
-                <button class="delete-btn" data-id="${sale.id}">削除</button>
-            </td>
-        `;
-
+            <td><button class="edit-btn" data-id="${sale.id}">変更</button><button class="delete-btn" data-id="${sale.id}">削除</button></td>`;
         const detailRow = document.createElement('tr');
-        const detailRowId = `sale-detail-${sale.id}`;
-        detailRow.id = detailRowId;
-        detailRow.className = 'history-details';
-        
+        detailRow.id = `sale-detail-${sale.id}`;
+        detailRow.style.display = 'none';
         const itemCounts = sale.items.reduce((acc, item) => {
             acc[item.name] = { price: item.price, count: (acc[item.name] ? acc[item.name].count : 0) + 1 };
             return acc;
         }, {});
-
         let detailsHtml = '<ul>';
         for (const name in itemCounts) {
             const item = itemCounts[name];
             detailsHtml += `<li>・${name}: ¥${item.price} x ${item.count} = ¥${item.price * item.count}</li>`;
         }
         detailsHtml += '</ul>';
-
         const detailCell = document.createElement('td');
         detailCell.colSpan = 4;
         detailCell.innerHTML = detailsHtml;
         detailRow.appendChild(detailCell);
-
         historyBody.appendChild(mainRow);
         historyBody.appendChild(detailRow);
-
         mainRow.addEventListener('click', (event) => {
-            if (event.target.classList.contains('delete-btn') || event.target.classList.contains('edit-btn')) {
-                return;
-            }
+            if (event.target.closest('button')) return;
             const isHidden = detailRow.style.display === 'none';
             detailRow.style.display = isHidden ? '' : 'none';
             mainRow.querySelector('.accordion-arrow').textContent = isHidden ? '▴' : '▾';
@@ -191,11 +170,12 @@
     }
     
     historyBody.addEventListener('click', async function(event) {
-        if (event.target.classList.contains('delete-btn')) {
-            const saleId = event.target.dataset.id;
+        const button = event.target.closest('button');
+        if (!button) return;
+        const saleId = button.dataset.id;
+        if (button.classList.contains('delete-btn')) {
             deleteSale(saleId);
-        } else if (event.target.classList.contains('edit-btn')) {
-            const saleId = event.target.dataset.id;
+        } else if (button.classList.contains('edit-btn')) {
             const response = await fetch('/api/sales/history');
             const sales = await response.json();
             const saleData = sales.find(s => s.id == saleId);
@@ -207,24 +187,110 @@
       if (!confirm(`会計ID #${id} を本当に削除しますか？\nこの操作は元に戻せません。`)) return;
       const response = await fetch(`/api/sales/${id}`, { method: 'DELETE' });
       if (response.ok) {
-        fetchSalesHistory(true); // 強制的に再描画
+        fetchSalesHistory(true);
       } else {
         alert('削除に失敗しました。');
       }
     }
 
-    function openEditModal(saleData) {
-        alert('変更機能は現在実装中です。');
+    // ★★★ 変更機能の実装 ★★★
+    async function openEditModal(saleData) {
+        const modal = document.getElementById('edit-modal');
+        const itemListDiv = document.getElementById('edit-item-list');
+        const saleIdSpan = document.getElementById('edit-sale-id');
+        const saveBtn = document.getElementById('save-changes-btn');
+        const addProductSelect = document.getElementById('add-product-select');
+        const addItemBtn = document.getElementById('add-item-to-sale-btn');
+
+        saleIdSpan.textContent = `(#${saleData.id})`;
+        
+        // 商品追加用のセレクトボックスを生成
+        addProductSelect.innerHTML = allProducts.map(p => `<option value="${p.id}">${p.name} (${p.price}円)</option>`).join('');
+
+        let currentItems = [...saleData.items];
+
+        function renderEditList() {
+            itemListDiv.innerHTML = '';
+            const itemCounts = currentItems.reduce((acc, item) => {
+                acc[item.id] = (acc[item.id] || 0) + 1;
+                return acc;
+            }, {});
+            const uniqueItems = [...new Map(currentItems.map(item => [item.id, item])).values()];
+            uniqueItems.forEach(item => {
+                const count = itemCounts[item.id];
+                const itemEl = document.createElement('div');
+                itemEl.style = 'display: flex; justify-content: space-between; align-items: center; padding: 5px 0;';
+                itemEl.innerHTML = `<span>${item.name} (¥${item.price})</span>
+                    <div>
+                        <button class="quantity-btn" data-id="${item.id}" data-action="decrease">-</button>
+                        <span style="display: inline-block; width: 30px; text-align: center;">${count}</span>
+                        <button class="quantity-btn" data-id="${item.id}" data-action="increase">+</button>
+                        <button class="delete-item-btn" data-id="${item.id}" style="margin-left: 10px; color: red; border: none; background: none; cursor: pointer; font-weight: bold;">×</button>
+                    </div>`;
+                itemListDiv.appendChild(itemEl);
+            });
+        }
+        
+        renderEditList();
+
+        const newAddItemBtn = addItemBtn.cloneNode(true);
+        addItemBtn.parentNode.replaceChild(newAddItemBtn, addItemBtn);
+        newAddItemBtn.onclick = () => {
+            const selectedProductId = parseInt(addProductSelect.value, 10);
+            const productToAdd = allProducts.find(p => p.id === selectedProductId);
+            if(productToAdd) {
+                currentItems.push(productToAdd);
+                renderEditList();
+            }
+        };
+
+        itemListDiv.onclick = function(event) {
+            const button = event.target.closest('button');
+            if (!button) return;
+            const productId = parseInt(button.dataset.id, 10);
+            if (button.classList.contains('quantity-btn')) {
+                const action = button.dataset.action;
+                if (action === 'increase') {
+                    const productToAdd = allProducts.find(p => p.id === productId);
+                    if (productToAdd) currentItems.push(productToAdd);
+                } else if (action === 'decrease') {
+                    const itemIndex = currentItems.findIndex(item => item.id === productId);
+                    if (itemIndex > -1) currentItems.splice(itemIndex, 1);
+                }
+            } else if (button.classList.contains('delete-item-btn')) {
+                currentItems = currentItems.filter(item => item.id !== productId);
+            }
+            renderEditList();
+        };
+
+        const newSaveBtn = saveBtn.cloneNode(true);
+        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+        newSaveBtn.onclick = async function() {
+            const response = await fetch(`/api/sales/${saleData.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: currentItems })
+            });
+            if (response.ok) {
+                alert('会計情報を更新しました。');
+                document.getElementById('edit-modal').style.display = 'none';
+                fetchSalesHistory(true);
+            } else {
+                alert(`更新に失敗しました。`);
+            }
+        };
+
+        modal.style.display = 'flex';
     }
 
     async function fetchProducts() {
       const response = await fetch('/api/products');
-      const products = await response.json();
+      allProducts = await response.json(); // 取得した商品をキャッシュ
       productListBody.innerHTML = '';
-      products.forEach(product => {
+      allProducts.forEach(product => {
         const row = document.createElement('tr');
         row.id = `product-row-${product.id}`;
-        row.innerHTML = `<td>${product.name}</td><td>${product.price} 円</td><td><div class="color-swatch" style="background-color: ${product.color};"></div></td><td><button class="delete-btn" onclick="deleteProduct(${product.id})">削除</button></td>`;
+        row.innerHTML = `<td>${product.name}</td><td>${product.price} 円</td><td><div class="color-swatch" style="background-color: ${product.color};"></div></td><td><button class="delete-btn" data-id="${product.id}">削除</button></td>`;
         productListBody.appendChild(row);
       });
     }
@@ -235,6 +301,9 @@
       if (response.ok) { fetchProducts(); }
       else { alert('削除に失敗しました。'); }
     }
+    productListBody.addEventListener('click', e => {
+        if(e.target.classList.contains('delete-btn')) deleteProduct(e.target.dataset.id);
+    });
 
     addProductForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -255,35 +324,21 @@
     document.getElementById('bulk-delete-btn').addEventListener('click', async () => {
         const start = document.getElementById('start-date').value;
         const end = document.getElementById('end-date').value;
-
-        if (!start || !end) {
-            alert('開始日時と終了日時を両方選択してください。');
-            return;
-        }
-
-        const confirmation = confirm(`本当に ${new Date(start).toLocaleString()} から ${new Date(end).toLocaleString()} までの履歴をすべて削除しますか？\nこの操作は元に戻せません。`);
-
-        if (confirmation) {
+        if (!start || !end) return alert('開始日時と終了日時を両方選択してください。');
+        if (confirm(`本当に ${new Date(start).toLocaleString()} から ${new Date(end).toLocaleString()} までの履歴をすべて削除しますか？\nこの操作は元に戻せません。`)) {
             try {
-                const response = await fetch(`/api/sales?start=${start}&end=${end}`, {
-                    method: 'DELETE'
-                });
+                const response = await fetch(`/api/sales?start=${start}&end=${end}`, { method: 'DELETE' });
                 const result = await response.json();
                 alert(result.message);
-                fetchSalesHistory(true); // 強制的に再描画
-            } catch (err) {
-                alert('エラーが発生しました。');
-            }
+                fetchSalesHistory(true);
+            } catch (err) { alert('エラーが発生しました。'); }
         }
     });
 
-    // --- 修正：初期化関数 ---
     async function initializeAdminPage() {
       createColorPicker();
-      fetchProducts();
-      await fetchSalesHistory(); // 最初に一度読み込む
-
-      // 5秒ごとに会計履歴を自動更新
+      await fetchProducts();
+      await fetchSalesHistory(true);
       setInterval(() => fetchSalesHistory(false), 5000);
     }
 
