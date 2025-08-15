@@ -103,9 +103,10 @@ This project is licensed under the MIT License.
 
 Author
 mattu117117
+If you find this project useful, please consider giving it a star (★)!
 
 学園祭向けPOSレジシステム (Gakuensai-POS)
-
+このプログラムを参考・利用された方は、スター (★) を押していただけると嬉しいです！
 
 概要
 このPOSシステムは、学園祭の運営をよりスムーズに、そして楽しくすることを目指して開発されました。主な利用者は、会計担当者、調理担当者、そして運営管理者です。それぞれの役割に応じた3つの画面を提供し、リアルタイムでの情報共有を実現します。
