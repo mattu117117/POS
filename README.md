@@ -1,11 +1,116 @@
 学園祭向けPOSレジシステム (Gakuensai-POS)
 学園祭や模擬店といった小規模イベントでの利用を想定した、シンプルで直感的に操作できるWebベースのPOSレジシステムです。
+
+
+
+Gakuensai-POS: A Simple POS System for School Festivals
+
 <img width="2868" height="1452" alt="image" src="https://github.com/user-attachments/assets/69bc5e06-12ac-477a-9148-c9fa55011bf8" />
 <img width="2860" height="1442" alt="image" src="https://github.com/user-attachments/assets/aecd007c-703f-4e50-a714-a6ceff09c325" />
 <img width="2826" height="1443" alt="image" src="https://github.com/user-attachments/assets/7748c8d6-dbf2-4c61-8576-100d0f77e6df" />
 <img width="2829" height="1442" alt="image" src="https://github.com/user-attachments/assets/dc59542a-ff82-4458-b41f-6ca58cd54b08" />
 
-(👆 この部分に、実際に動作している画面のスクリーンショットやGIFアニメーションを挿入することを強くお勧めします。レジ画面、キッチン画面、管理画面が一覧できると、プロジェクトの魅力が一目で伝わります。)
+Overview
+This is a simple, intuitive, web-based POS (Point of Sale) system designed for small-scale events like school festivals and bake sales.
+
+Developed to make festival operations smoother and more enjoyable, this system provides three dedicated screens for each role: cashier, kitchen staff, and event administrator, enabling seamless real-time information sharing.
+
+No special software installation is required. Anyone can easily start using the system from a browser on a single PC running Node.js.
+
+Features
+💻 Register Screen (index.html)
+The main screen for cashiers.
+
+Intuitive Product Selection: Easily add items to the cart with a single tap.
+
+Quantity Adjustment: Intuitively change item quantities in the cart using "+" and "-" buttons.
+
+Discount Functionality: Apply discounts to each transaction.
+
+Checkout Process: Upon checkout, order data is sent to the Kitchen and Admin screens in real-time.
+
+🍳 Kitchen Display (kitchen.html)
+The display for kitchen and preparation staff.
+
+Real-time Order Feed: New orders are added to the list in real-time.
+
+Filtering System: Filter orders by specific products (e.g., show only "Takoyaki" or "Popcorn").
+
+Completion Check: Mark items as "served" to clear them from the list and update their status.
+
+Audio Notifications: A sound alert plays when a new order that matches the current filter settings comes in.
+
+📊 Admin Panel (admin.html)
+A dashboard for event administrators to manage sales and products.
+
+Real-time Sales History: View all transaction histories, updated in real-time.
+
+Detailed View: Click on any transaction to expand an accordion view showing detailed item information (name, price, quantity, subtotal).
+
+Product Management: Add or delete products and set their corresponding button colors.
+
+Bulk Deletion: Delete all sales data within a specified date and time range to reset records.
+
+CSV Data Export: Download all sales data as a CSV file for easy accounting and reporting.
+
+Tech Stack
+Backend: Node.js, Express
+
+Frontend: HTML, CSS, JavaScript (Vanilla JS)
+
+Data Store: JSON files
+
+Getting Started
+Follow these steps to run the project in your local environment.
+
+Clone the repository:
+
+Bash
+
+git clone https://docs.github.com/en/repositories/creating-and-managing-repositories/about-repositories
+Navigate to the directory:
+
+Bash
+
+cd gakuensai-pos
+Install the necessary packages:
+
+Bash
+
+npm install
+Start the server:
+
+Bash
+
+node server.js
+Access in your browser:
+Once the server is running, open your browser and navigate to the following URLs:
+
+Register Screen: http://localhost:3000
+
+Kitchen Display: http://localhost:3000/kitchen.html
+
+Admin Panel: http://localhost:3000/admin.html
+
+Future Improvements
+Ideas for enhancing this project for more robust use.
+
+Database Integration: Migrate from the current JSON file data management to a more stable lightweight database like SQLite to prevent data corruption from concurrent access.
+
+Inventory Management: Add a feature to track stock levels for each product and disable selection on the register screen when an item is sold out.
+
+Product Editing: Implement functionality to edit the name and price of existing products from the admin panel.
+
+Sales Analytics Dashboard: Create a dashboard in the admin panel to visualize sales data with charts for hourly sales, top-selling items, etc.
+
+License
+This project is licensed under the MIT License.
+
+Author
+[Your Name or GitHub Account Name]
+
+学園祭向けPOSレジシステム (Gakuensai-POS)
+
 
 概要
 このPOSシステムは、学園祭の運営をよりスムーズに、そして楽しくすることを目指して開発されました。主な利用者は、会計担当者、調理担当者、そして運営管理者です。それぞれの役割に応じた3つの画面を提供し、リアルタイムでの情報共有を実現します。
@@ -102,4 +207,4 @@ node server.js
 このプロジェクトはMITライセンスの下で公開されています。
 
 作者
-mattu117117
+[あなたの名前やGitHubアカウント名]
