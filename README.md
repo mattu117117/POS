@@ -102,7 +102,7 @@ License
 This project is licensed under the MIT License.
 
 Author
-[Your Name or GitHub Account Name]
+mattu117117
 
 学園祭向けPOSレジシステム (Gakuensai-POS)
 
@@ -202,4 +202,4 @@ node server.js
 このプロジェクトはMITライセンスの下で公開されています。
 
 作者
-[あなたの名前やGitHubアカウント名]
+mattu117117
