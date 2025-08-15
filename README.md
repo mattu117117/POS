@@ -1,5 +1,9 @@
 学園祭向けPOSレジシステム (Gakuensai-POS)
 学園祭や模擬店といった小規模イベントでの利用を想定した、シンプルで直感的に操作できるWebベースのPOSレジシステムです。
+<img width="2868" height="1452" alt="image" src="https://github.com/user-attachments/assets/69bc5e06-12ac-477a-9148-c9fa55011bf8" />
+<img width="2860" height="1442" alt="image" src="https://github.com/user-attachments/assets/aecd007c-703f-4e50-a714-a6ceff09c325" />
+<img width="2826" height="1443" alt="image" src="https://github.com/user-attachments/assets/7748c8d6-dbf2-4c61-8576-100d0f77e6df" />
+<img width="2829" height="1442" alt="image" src="https://github.com/user-attachments/assets/dc59542a-ff82-4458-b41f-6ca58cd54b08" />
 
 (👆 この部分に、実際に動作している画面のスクリーンショットやGIFアニメーションを挿入することを強くお勧めします。レジ画面、キッチン画面、管理画面が一覧できると、プロジェクトの魅力が一目で伝わります。)
 
