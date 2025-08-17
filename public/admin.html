@@ -12,15 +12,16 @@
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
     th { background-color: #f2f2f2; }
-    .delete-btn { background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
-    .delete-btn:hover { background: #c82333; }
-    .edit-btn { background: #ffc107; color: black; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; margin-right: 5px;}
-    .edit-btn:hover { background: #e0a800; }
+    .btn { border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
+    .delete-btn { background: #dc3545; color: white; }
+    .edit-btn { background: #ffc107; color: black; margin-right: 5px;}
+    .save-btn { background: #28a745; color: white; margin-right: 5px; }
+    .cancel-btn { background: #6c757d; color: white; }
+    td input[type="text"], td input[type="number"] { width: 90%; padding: 8px; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; }
     .download-btn-admin { display: inline-block; background-color: #17a2b8; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: flex-end; margin-top: 15px; }
     .form-grid input { width: 100%; padding: 10px; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;}
     .form-grid button { background: #007bff; color: white; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; font-size: 1em;}
-    .form-grid button:hover { background: #0056b3; }
     .color-picker { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px; }
     .color-box { width: 30px; height: 30px; border-radius: 5px; cursor: pointer; border: 2px solid transparent; }
     .color-box.selected { border-color: #007bff; }
@@ -36,20 +37,13 @@
       <h2>会計履歴</h2>
       <div id="bulk-delete-section" style="padding: 15px; background: #f8d7da; border: 1px solid #f5c6cb; margin-bottom: 15px; border-radius: 5px;">
         <h4>期間指定で一括削除</h4>
-        <label for="start-date">開始日時:</label>
-        <input type="datetime-local" id="start-date">
-        <label for="end-date">終了日時:</label>
-        <input type="datetime-local" id="end-date">
-        <button id="bulk-delete-btn" class="delete-btn" style="width: auto; margin-left: 10px;">この範囲の履歴を削除</button>
+        <label for="start-date">開始日時:</label> <input type="datetime-local" id="start-date">
+        <label for="end-date">終了日時:</label> <input type="datetime-local" id="end-date">
+        <button id="bulk-delete-btn" class="btn delete-btn" style="width: auto; margin-left: 10px;">この範囲の履歴を削除</button>
       </div>
       <table>
         <thead>
-          <tr>
-            <th>会計ID</th>
-            <th>日時</th>
-            <th>合計金額</th>
-            <th>操作</th>
-          </tr>
+          <tr><th>会計ID</th><th>日時</th><th>合計金額</th><th>操作</th></tr>
         </thead>
         <tbody id="history-body"></tbody>
       </table>
@@ -59,12 +53,7 @@
       <h2>商品管理</h2>
       <table>
         <thead>
-          <tr>
-            <th>商品名</th>
-            <th>価格</th>
-            <th>色</th>
-            <th>操作</th>
-          </tr>
+          <tr><th>商品名</th><th>価格</th><th>色</th><th>操作</th></tr>
         </thead>
         <tbody id="product-list-body"></tbody>
       </table>
@@ -85,17 +74,17 @@
   </div>
 
   <div id="edit-modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
-      <div style="background: white; width: 90%; max-width: 600px; padding: 20px; border-radius: 8px;">
-          <h3>会計内容の変更 <span id="edit-sale-id"></span></h3>
-          <div id="edit-item-list" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;"></div>
-          <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <select id="add-product-select" style="flex-grow: 1; padding: 8px;"></select>
-            <button id="add-item-to-sale-btn">商品を追加</button>
-          </div>
-          <hr>
-          <button id="save-changes-btn">この内容で保存</button>
-          <button onclick="document.getElementById('edit-modal').style.display='none'">キャンセル</button>
-      </div>
+    <div style="background: white; width: 90%; max-width: 600px; padding: 20px; border-radius: 8px;">
+        <h3>会計内容の変更 <span id="edit-sale-id"></span></h3>
+        <div id="edit-item-list" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;"></div>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <select id="add-product-select" style="flex-grow: 1; padding: 8px;"></select>
+          <button id="add-item-to-sale-btn">商品を追加</button>
+        </div>
+        <hr>
+        <button id="save-changes-btn">この内容で保存</button>
+        <button onclick="document.getElementById('edit-modal').style.display='none'">キャンセル</button>
+    </div>
   </div>
 
   <script>
@@ -104,11 +93,10 @@
     const addProductForm = document.getElementById('add-product-form');
     const colorPicker = document.getElementById('color-picker');
 
-    // ★★★ ご指定のカラーパレットに変更 ★★★
     const colors = ['#ff9e9e','#ffa8d3','#c68eff', '#9999ff', '#9eceff', '#a3ffff', '#9eff9e', '#ffff89', '#ffd1a3'];
     let selectedColor = colors[0];
     let latestSaleId = null;
-    let allProducts = []; // 全商品リストをキャッシュする
+    let allProducts = [];
 
     function createColorPicker() {
       colorPicker.innerHTML = '';
@@ -140,7 +128,7 @@
             <td>#${sale.id} <span class="accordion-arrow">▾</span></td>
             <td>${new Date(sale.createdAt).toLocaleString('ja-JP')}</td>
             <td>${sale.finalTotal} 円</td>
-            <td><button class="edit-btn" data-id="${sale.id}">変更</button><button class="delete-btn" data-id="${sale.id}">削除</button></td>`;
+            <td><button class="btn edit-btn" data-id="${sale.id}">変更</button><button class="btn delete-btn" data-id="${sale.id}">削除</button></td>`;
         const detailRow = document.createElement('tr');
         detailRow.id = `sale-detail-${sale.id}`;
         detailRow.style.display = 'none';
@@ -193,57 +181,37 @@
       }
     }
 
-    // ★★★ 変更機能の実装 ★★★
     async function openEditModal(saleData) {
+        // (会計履歴の編集機能は変更なし)
         const modal = document.getElementById('edit-modal');
         const itemListDiv = document.getElementById('edit-item-list');
         const saleIdSpan = document.getElementById('edit-sale-id');
         const saveBtn = document.getElementById('save-changes-btn');
         const addProductSelect = document.getElementById('add-product-select');
         const addItemBtn = document.getElementById('add-item-to-sale-btn');
-
         saleIdSpan.textContent = `(#${saleData.id})`;
-        
-        // 商品追加用のセレクトボックスを生成
         addProductSelect.innerHTML = allProducts.map(p => `<option value="${p.id}">${p.name} (${p.price}円)</option>`).join('');
-
         let currentItems = [...saleData.items];
-
         function renderEditList() {
             itemListDiv.innerHTML = '';
-            const itemCounts = currentItems.reduce((acc, item) => {
-                acc[item.id] = (acc[item.id] || 0) + 1;
-                return acc;
-            }, {});
+            const itemCounts = currentItems.reduce((acc, item) => { acc[item.id] = (acc[item.id] || 0) + 1; return acc; }, {});
             const uniqueItems = [...new Map(currentItems.map(item => [item.id, item])).values()];
             uniqueItems.forEach(item => {
                 const count = itemCounts[item.id];
                 const itemEl = document.createElement('div');
                 itemEl.style = 'display: flex; justify-content: space-between; align-items: center; padding: 5px 0;';
-                itemEl.innerHTML = `<span>${item.name} (¥${item.price})</span>
-                    <div>
-                        <button class="quantity-btn" data-id="${item.id}" data-action="decrease">-</button>
-                        <span style="display: inline-block; width: 30px; text-align: center;">${count}</span>
-                        <button class="quantity-btn" data-id="${item.id}" data-action="increase">+</button>
-                        <button class="delete-item-btn" data-id="${item.id}" style="margin-left: 10px; color: red; border: none; background: none; cursor: pointer; font-weight: bold;">×</button>
-                    </div>`;
+                itemEl.innerHTML = `<span>${item.name} (¥${item.price})</span><div><button class="quantity-btn" data-id="${item.id}" data-action="decrease">-</button><span style="display: inline-block; width: 30px; text-align: center;">${count}</span><button class="quantity-btn" data-id="${item.id}" data-action="increase">+</button><button class="delete-item-btn" data-id="${item.id}" style="margin-left: 10px; color: red; border: none; background: none; cursor: pointer; font-weight: bold;">×</button></div>`;
                 itemListDiv.appendChild(itemEl);
             });
         }
-        
         renderEditList();
-
         const newAddItemBtn = addItemBtn.cloneNode(true);
         addItemBtn.parentNode.replaceChild(newAddItemBtn, addItemBtn);
         newAddItemBtn.onclick = () => {
             const selectedProductId = parseInt(addProductSelect.value, 10);
             const productToAdd = allProducts.find(p => p.id === selectedProductId);
-            if(productToAdd) {
-                currentItems.push(productToAdd);
-                renderEditList();
-            }
+            if(productToAdd) { currentItems.push(productToAdd); renderEditList(); }
         };
-
         itemListDiv.onclick = function(event) {
             const button = event.target.closest('button');
             if (!button) return;
@@ -262,47 +230,104 @@
             }
             renderEditList();
         };
-
         const newSaveBtn = saveBtn.cloneNode(true);
         saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
         newSaveBtn.onclick = async function() {
-            const response = await fetch(`/api/sales/${saleData.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items: currentItems })
-            });
+            const response = await fetch(`/api/sales/${saleData.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: currentItems }) });
             if (response.ok) {
                 alert('会計情報を更新しました。');
                 document.getElementById('edit-modal').style.display = 'none';
                 fetchSalesHistory(true);
-            } else {
-                alert(`更新に失敗しました。`);
-            }
+            } else { alert(`更新に失敗しました。`); }
         };
-
         modal.style.display = 'flex';
     }
 
+    // ★★★ ここから商品管理のロジックを大幅に変更 ★★★
     async function fetchProducts() {
       const response = await fetch('/api/products');
-      allProducts = await response.json(); // 取得した商品をキャッシュ
+      allProducts = await response.json();
       productListBody.innerHTML = '';
       allProducts.forEach(product => {
         const row = document.createElement('tr');
         row.id = `product-row-${product.id}`;
-        row.innerHTML = `<td>${product.name}</td><td>${product.price} 円</td><td><div class="color-swatch" style="background-color: ${product.color};"></div></td><td><button class="delete-btn" data-id="${product.id}">削除</button></td>`;
+        // 通常時の表示行を生成
+        renderProductRow(row, product);
         productListBody.appendChild(row);
       });
     }
 
-    async function deleteProduct(id) {
-      if (!confirm(`この商品を本当に削除しますか？`)) return;
-      const response = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-      if (response.ok) { fetchProducts(); }
-      else { alert('削除に失敗しました。'); }
+    // 通常時の商品行をレンダリングする関数
+    function renderProductRow(row, product) {
+        row.innerHTML = `
+            <td>${product.name}</td>
+            <td>${product.price} 円</td>
+            <td><div class="color-swatch" style="background-color: ${product.color};"></div></td>
+            <td>
+                <button class="btn edit-btn" data-id="${product.id}" data-name="${product.name}" data-price="${product.price}">編集</button>
+                <button class="btn delete-btn" data-id="${product.id}">削除</button>
+            </td>
+        `;
     }
-    productListBody.addEventListener('click', e => {
-        if(e.target.classList.contains('delete-btn')) deleteProduct(e.target.dataset.id);
+
+    // 編集時の商品行をレンダリングする関数
+    function renderEditRow(row, product) {
+        row.innerHTML = `
+            <td><input type="text" value="${product.name}" id="edit-name-${product.id}"></td>
+            <td><input type="number" value="${product.price}" id="edit-price-${product.id}"></td>
+            <td><div class="color-swatch" style="background-color: ${product.color};"></div></td>
+            <td>
+                <button class="btn save-btn" data-id="${product.id}">保存</button>
+                <button class="btn cancel-btn" data-id="${product.id}">キャンセル</button>
+            </td>
+        `;
+    }
+
+    productListBody.addEventListener('click', async (e) => {
+        const button = e.target.closest('button');
+        if (!button) return;
+
+        const id = parseInt(button.dataset.id, 10);
+        const row = document.getElementById(`product-row-${id}`);
+        const product = allProducts.find(p => p.id === id);
+
+        if (button.classList.contains('edit-btn')) {
+            renderEditRow(row, product);
+        }
+        else if (button.classList.contains('cancel-btn')) {
+            renderProductRow(row, product);
+        }
+        else if (button.classList.contains('save-btn')) {
+            const newName = document.getElementById(`edit-name-${id}`).value;
+            const newPrice = document.getElementById(`edit-price-${id}`).value;
+            
+            if (!newName || !newPrice || newPrice < 0) {
+                alert("商品名と正しい価格を入力してください。");
+                return;
+            }
+
+            const response = await fetch(`/api/products/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newName, price: newPrice })
+            });
+
+            if (response.ok) {
+                await fetchProducts(); // 成功したらリストを再描画
+            } else {
+                alert('商品の更新に失敗しました。');
+            }
+        }
+        else if (button.classList.contains('delete-btn')) {
+            if (confirm(`商品「${product.name}」を本当に削除しますか？`)) {
+                const response = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    await fetchProducts();
+                } else {
+                    alert('削除に失敗しました。');
+                }
+            }
+        }
     });
 
     addProductForm.addEventListener('submit', async (e) => {

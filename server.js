@@ -19,7 +19,6 @@ async function readData(filePath) {
     const data = await fs.readFile(filePath, 'utf8');
     return JSON.parse(data);
   } catch (err) {
-    // ファイルが存在しない場合は空の配列を返す
     if (err.code === 'ENOENT') {
       return []; 
     }
@@ -45,7 +44,7 @@ app.get('/api/products', async (req, res) => {
   res.json(await readData(PRODUCTS_FILE));
 });
 
-// 新しい商品を追加 ★バグ修正済み
+// 新しい商品を追加
 app.post('/api/products', async (req, res) => {
   try {
     const products = await readData(PRODUCTS_FILE);
@@ -61,6 +60,36 @@ app.post('/api/products', async (req, res) => {
   } catch(err) { res.status(500).json({ message: "商品追加エラー" }); }
 });
 
+// ★★★ ここから新規追加 ★★★
+// 特定の商品を更新
+app.put('/api/products/:id', async (req, res) => {
+    try {
+        const products = await readData(PRODUCTS_FILE);
+        const productId = parseInt(req.params.id, 10);
+        const productIndex = products.findIndex(p => p.id === productId);
+
+        if (productIndex === -1) {
+            return res.status(404).json({ message: "該当の商品が見つかりません。" });
+        }
+
+        // 新しい情報で商品を更新
+        const updatedProduct = {
+            ...products[productIndex], // idとcolorは維持
+            name: req.body.name,
+            price: parseInt(req.body.price, 10)
+        };
+        products[productIndex] = updatedProduct;
+
+        await writeData(PRODUCTS_FILE, products);
+        res.json({ message: "商品を更新しました。", product: updatedProduct });
+
+    } catch(err) {
+        console.error("商品更新エラー:", err);
+        res.status(500).json({ message: "商品更新エラー" });
+    }
+});
+// ★★★ ここまで新規追加 ★★★
+
 // 商品を削除
 app.delete('/api/products/:id', async (req, res) => {
     try {
@@ -70,65 +99,6 @@ app.delete('/api/products/:id', async (req, res) => {
         res.json({ message: "商品を削除しました。" });
     } catch(err) { res.status(500).json({ message: "商品削除エラー" }); }
 });
-
-// server.js 内
-
-// （既存の app.get や app.post の定義はそのまま）
-
-// 特定の会計情報を更新 (この部分を置き換える)
-app.put('/api/sales/:id', async (req, res) => {
-    try {
-        const sales = await readData(SALES_FILE);
-        const products = await readData(PRODUCTS_FILE); // 商品マスタを読み込む
-        const saleId = parseInt(req.params.id, 10);
-        const saleIndex = sales.findIndex(s => s.id === saleId);
-
-        if (saleIndex === -1) {
-            return res.status(404).json({ message: "該当の会計が見つかりません。" });
-        }
-
-        const { items: updatedItems } = req.body; // クライアントからは更新されたitems配列のみ受け取る
-
-        if (!Array.isArray(updatedItems)) {
-            return res.status(400).json({ message: "無効なデータ形式です。" });
-        }
-        
-        // --- サーバー側で金額を再計算 ---
-        let newTotal = 0;
-        updatedItems.forEach(item => {
-            const productInfo = products.find(p => p.id === item.id);
-            if(productInfo) {
-              newTotal += productInfo.price;
-            }
-        });
-
-        const originalSale = sales[saleIndex];
-        const discount = originalSale.discount || 0; // 割引額は元の記録を維持
-        const newFinalTotal = newTotal - discount;
-
-        // 元のデータを更新
-        originalSale.items = updatedItems;
-        originalSale.total = newTotal;
-        originalSale.finalTotal = newFinalTotal < 0 ? 0 : newFinalTotal;
-        
-        // 提供ステータスをリセットする必要がある場合は、以下のコメントアウトを解除
-        // originalSale.status = '未提供';
-        // const itemStatus = {};
-        // const uniqueProductIds = [...new Set(updatedItems.map(item => item.id))];
-        // uniqueProductIds.forEach(id => { itemStatus[id] = 'undelivered'; });
-        // originalSale.itemStatus = itemStatus;
-
-
-        await writeData(SALES_FILE, sales);
-        res.json({ message: "会計情報を更新しました。", sale: originalSale });
-
-    } catch(err) {
-        console.error("会計更新エラー:", err);
-        res.status(500).json({ message: "会計更新エラー" });
-    }
-});
-
-// （他のエンドポイントはそのまま）
 
 // 次の注文IDを取得
 app.get('/api/next-order-id', async (req, res) => {
@@ -164,6 +134,36 @@ app.post('/api/sales', async (req, res) => {
   } catch (err) { res.status(500).json({ message: "会計記録エラー" }); }
 });
 
+app.put('/api/sales/:id', async (req, res) => {
+    try {
+        const sales = await readData(SALES_FILE);
+        const products = await readData(PRODUCTS_FILE);
+        const saleId = parseInt(req.params.id, 10);
+        const saleIndex = sales.findIndex(s => s.id === saleId);
+        if (saleIndex === -1) return res.status(404).json({ message: "該当の会計が見つかりません。" });
+        const { items: updatedItems } = req.body;
+        if (!Array.isArray(updatedItems)) return res.status(400).json({ message: "無効なデータ形式です。" });
+        
+        let newTotal = 0;
+        updatedItems.forEach(item => {
+            const productInfo = products.find(p => p.id === item.id);
+            if(productInfo) newTotal += productInfo.price;
+        });
+        const originalSale = sales[saleIndex];
+        const discount = originalSale.discount || 0;
+        const newFinalTotal = newTotal - discount;
+        originalSale.items = updatedItems;
+        originalSale.total = newTotal;
+        originalSale.finalTotal = newFinalTotal < 0 ? 0 : newFinalTotal;
+        await writeData(SALES_FILE, sales);
+        res.json({ message: "会計情報を更新しました。", sale: originalSale });
+    } catch(err) {
+        console.error("会計更新エラー:", err);
+        res.status(500).json({ message: "会計更新エラー" });
+    }
+});
+
+
 // 未提供の注文リストを取得
 app.get('/api/kitchen/undelivered', async (req, res) => {
   const sales = await readData(SALES_FILE);
@@ -176,18 +176,15 @@ app.post('/api/kitchen/order/:orderId/item/:productId/complete', async (req, res
         const sales = await readData(SALES_FILE);
         const orderId = parseInt(req.params.orderId, 10);
         const productId = req.params.productId;
-
         const saleIndex = sales.findIndex(s => s.id === orderId);
         if (saleIndex > -1) {
             if (sales[saleIndex].itemStatus && sales[saleIndex].itemStatus[productId]) {
                 sales[saleIndex].itemStatus[productId] = 'delivered';
             }
-            
             const allDelivered = Object.values(sales[saleIndex].itemStatus).every(status => status === 'delivered');
             if (allDelivered) {
                 sales[saleIndex].status = '提供済み';
             }
-            
             await writeData(SALES_FILE, sales);
             res.json({ message: '商品を更新しました。'});
         } else {
@@ -202,23 +199,10 @@ app.get('/api/sales/history', async (req, res) => {
     res.json(sales.sort((a, b) => b.id - a.id));
 });
 
-// 特定の会計を削除
-app.delete('/api/sales/:id', async (req, res) => {
-    try {
-        const sales = await readData(SALES_FILE);
-        const updatedSales = sales.filter(s => s.id !== parseInt(req.params.id, 10));
-        await writeData(SALES_FILE, updatedSales);
-        res.json({ message: "会計を削除しました。" });
-    } catch(err) { res.status(500).json({ message: "会計削除エラー" }); }
-});
-
-// 期間を指定して会計履歴を一括削除
 app.delete('/api/sales', async (req, res) => {
     try {
         const { start, end } = req.query;
-        if (!start || !end) {
-            return res.status(400).json({ message: "開始日時と終了日時を指定してください。" });
-        }
+        if (!start || !end) return res.status(400).json({ message: "開始日時と終了日時を指定してください。" });
         const startDate = new Date(start);
         const endDate = new Date(end);
         const sales = await readData(SALES_FILE);
@@ -233,47 +217,37 @@ app.delete('/api/sales', async (req, res) => {
     }
 });
 
-// server.js内
+// 特定の会計を削除
+app.delete('/api/sales/:id', async (req, res) => {
+    try {
+        const sales = await readData(SALES_FILE);
+        const updatedSales = sales.filter(s => s.id !== parseInt(req.params.id, 10));
+        await writeData(SALES_FILE, updatedSales);
+        res.json({ message: "会計を削除しました。" });
+    } catch(err) { res.status(500).json({ message: "会計削除エラー" }); }
+});
 
-// CSVをダウンロード (この関数全体を置き換える)
+// CSVをダウンロード
 app.get('/api/sales/csv', async (req, res) => {
     const sales = await readData(SALES_FILE);
-    // 1. ヘッダーに「値引額」を追加
     const header = ['会計ID', '日時', '商品名', '数量', '単価', '小計', '値引額'];
     let csvRows = [header.join(',')];
-    
-    // 2. 1つの会計IDで値引き額が重複しないように管理
-    let processedIds = new Set();
-
     sales.forEach(sale => {
         const itemCounts = sale.items.reduce((acc, item) => {
             if (!acc[item.id]) { acc[item.id] = { name: item.name, price: item.price, quantity: 0 }; }
             acc[item.id].quantity++;
             return acc;
         }, {});
-
         let isFirstItemOfSale = true;
         Object.values(itemCounts).forEach(item => {
-            // その会計の最初の行にだけ値引き額を記載し、それ以外は空にする
             const discountForThisRow = isFirstItemOfSale ? (sale.discount || 0) : '';
-            
-            const rowData = [
-                sale.id, 
-                new Date(sale.createdAt).toLocaleString('ja-JP'), 
-                item.name, 
-                item.quantity, 
-                item.price, 
-                item.price * item.quantity,
-                discountForThisRow // 3. 行データに値引額を追加
-            ];
-            
-            csvRows.push(rowData.join(','));
-            isFirstItemOfSale = false; // 2行目以降は値引き額を空にするためのフラグ
+            csvRows.push([sale.id, new Date(sale.createdAt).toLocaleString('ja-JP'), item.name, item.quantity, item.price, item.price * item.quantity, discountForThisRow].join(','));
+            isFirstItemOfSale = false;
         });
     });
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="sales_data.csv"');
-    res.status(200).send('\ufeff' + csvRows.join('\n')); // BOM付きUTF-8で出力
+    res.status(200).send('\ufeff' + csvRows.join('\n'));
 });
 
 // --- サーバー起動 ---
