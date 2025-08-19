@@ -60,7 +60,6 @@ app.post('/api/products', async (req, res) => {
   } catch(err) { res.status(500).json({ message: "商品追加エラー" }); }
 });
 
-// ★★★ ここから新規追加 ★★★
 // 特定の商品を更新
 app.put('/api/products/:id', async (req, res) => {
     try {
@@ -74,9 +73,10 @@ app.put('/api/products/:id', async (req, res) => {
 
         // 新しい情報で商品を更新
         const updatedProduct = {
-            ...products[productIndex], // idとcolorは維持
+            ...products[productIndex], 
             name: req.body.name,
-            price: parseInt(req.body.price, 10)
+            price: parseInt(req.body.price, 10),
+            color: req.body.color // 色の更新を追加
         };
         products[productIndex] = updatedProduct;
 
@@ -88,7 +88,6 @@ app.put('/api/products/:id', async (req, res) => {
         res.status(500).json({ message: "商品更新エラー" });
     }
 });
-// ★★★ ここまで新規追加 ★★★
 
 // 商品を削除
 app.delete('/api/products/:id', async (req, res) => {

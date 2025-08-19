@@ -1,4 +1,4 @@
-# Gakuensai-POS: A Simple POS System for School Festivals
+# EventPOS: A Simple POS System for Events
 <img width="2868" height="1452" alt="image" src="https://github.com/user-attachments/assets/69bc5e06-12ac-477a-9148-c9fa55011bf8" />
 <img width="2860" height="1442" alt="image" src="https://github.com/user-attachments/assets/aecd007c-703f-4e50-a714-a6ceff09c325" />
 <img width="2826" height="1443" alt="image" src="https://github.com/user-attachments/assets/7748c8d6-dbf2-4c61-8576-100d0f77e6df" />
@@ -70,7 +70,7 @@ Follow these steps to run the project in your local environment.
 2.  **Navigate to the directory:**
 
     ```bash
-    cd gakuensai-pos
+    cd EventPOS
     ```
 
 3.  **Install the necessary packages:**
@@ -121,7 +121,7 @@ If you find this project useful, please consider giving it a star (★)!
 
 -----
 
-# 学園祭向けPOSレジシステム (Gakuensai-POS)
+# イベント向けPOSレジシステム (EventPOS)
 
 <img width="2868" height="1452" alt="image" src="https://github.com/user-attachments/assets/69bc5e06-12ac-477a-9148-c9fa55011bf8" />
 <img width="2860" height="1442" alt="image" src="https://github.com/user-attachments/assets/aecd007c-703f-4e50-a714-a6ceff09c325" />
@@ -191,7 +191,7 @@ If you find this project useful, please consider giving it a star (★)!
 2.  **ディレクトリに移動:**
 
     ```bash
-    cd gakuensai-pos
+    cd EventPOS
     ```
 
 3.  **必要なパッケージをインストール:**

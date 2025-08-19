@@ -27,6 +27,7 @@
     .color-box.selected { border-color: #007bff; }
     .color-swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ccc; }
     td ul { margin: 0; padding-left: 20px; }
+    .edit-color-picker .color-box { width: 24px; height: 24px; } /* 編集行のカラーピッカーを少し小さくする */
   </style>
 </head>
 <body>
@@ -92,25 +93,27 @@
     const productListBody = document.getElementById('product-list-body');
     const addProductForm = document.getElementById('add-product-form');
     const colorPicker = document.getElementById('color-picker');
-
-    const colors = ['#ff9e9e','#ffa8d3','#c68eff', '#9999ff', '#9eceff', '#a3ffff', '#9eff9e', '#ffff89', '#ffd1a3'];
+//色はここで追加変更
+    const colors = ['#ff9e9e','#ffa8d3','#c68eff', '#9999ff', '#9eceff', '#a3ffff', '#9eff9e', '#ffff89', 'ffffff','#ffd1a3'];
     let selectedColor = colors[0];
     let latestSaleId = null;
     let allProducts = [];
 
-    function createColorPicker() {
-      colorPicker.innerHTML = '';
-      colors.forEach((color, index) => {
+    function createColorPicker(container, initialColor, callback) {
+      container.innerHTML = '';
+      colors.forEach(color => {
         const box = document.createElement('div');
         box.className = 'color-box';
         box.style.backgroundColor = color;
-        if (index === 0) box.classList.add('selected');
+        if (color === initialColor) box.classList.add('selected');
+        
         box.addEventListener('click', () => {
-          document.querySelector('.color-box.selected').classList.remove('selected');
+          const currentSelected = container.querySelector('.color-box.selected');
+          if (currentSelected) currentSelected.classList.remove('selected');
           box.classList.add('selected');
-          selectedColor = color;
+          if (callback) callback(color);
         });
-        colorPicker.appendChild(box);
+        container.appendChild(box);
       });
     }
 
@@ -243,7 +246,6 @@
         modal.style.display = 'flex';
     }
 
-    // ★★★ ここから商品管理のロジックを大幅に変更 ★★★
     async function fetchProducts() {
       const response = await fetch('/api/products');
       allProducts = await response.json();
@@ -251,36 +253,35 @@
       allProducts.forEach(product => {
         const row = document.createElement('tr');
         row.id = `product-row-${product.id}`;
-        // 通常時の表示行を生成
         renderProductRow(row, product);
         productListBody.appendChild(row);
       });
     }
 
-    // 通常時の商品行をレンダリングする関数
     function renderProductRow(row, product) {
         row.innerHTML = `
             <td>${product.name}</td>
             <td>${product.price} 円</td>
             <td><div class="color-swatch" style="background-color: ${product.color};"></div></td>
             <td>
-                <button class="btn edit-btn" data-id="${product.id}" data-name="${product.name}" data-price="${product.price}">編集</button>
+                <button class="btn edit-btn" data-id="${product.id}">編集</button>
                 <button class="btn delete-btn" data-id="${product.id}">削除</button>
             </td>
         `;
     }
 
-    // 編集時の商品行をレンダリングする関数
     function renderEditRow(row, product) {
         row.innerHTML = `
             <td><input type="text" value="${product.name}" id="edit-name-${product.id}"></td>
             <td><input type="number" value="${product.price}" id="edit-price-${product.id}"></td>
-            <td><div class="color-swatch" style="background-color: ${product.color};"></div></td>
+            <td><div id="edit-color-picker-${product.id}" class="color-picker edit-color-picker"></div></td>
             <td>
                 <button class="btn save-btn" data-id="${product.id}">保存</button>
                 <button class="btn cancel-btn" data-id="${product.id}">キャンセル</button>
             </td>
         `;
+        const editColorPicker = row.querySelector(`#edit-color-picker-${product.id}`);
+        createColorPicker(editColorPicker, product.color, null);
     }
 
     productListBody.addEventListener('click', async (e) => {
@@ -300,7 +301,9 @@
         else if (button.classList.contains('save-btn')) {
             const newName = document.getElementById(`edit-name-${id}`).value;
             const newPrice = document.getElementById(`edit-price-${id}`).value;
-            
+            const selectedColorEl = document.querySelector(`#edit-color-picker-${id} .color-box.selected`);
+            const newColor = selectedColorEl ? selectedColorEl.style.backgroundColor : product.color;
+
             if (!newName || !newPrice || newPrice < 0) {
                 alert("商品名と正しい価格を入力してください。");
                 return;
@@ -309,11 +312,11 @@
             const response = await fetch(`/api/products/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newName, price: newPrice })
+                body: JSON.stringify({ name: newName, price: newPrice, color: newColor })
             });
 
             if (response.ok) {
-                await fetchProducts(); // 成功したらリストを再描画
+                await fetchProducts(); 
             } else {
                 alert('商品の更新に失敗しました。');
             }
@@ -361,7 +364,7 @@
     });
 
     async function initializeAdminPage() {
-      createColorPicker();
+      createColorPicker(colorPicker, selectedColor, (color) => { selectedColor = color; });
       await fetchProducts();
       await fetchSalesHistory(true);
       setInterval(() => fetchSalesHistory(false), 5000);
