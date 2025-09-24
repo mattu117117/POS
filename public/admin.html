@@ -51,7 +51,10 @@
     </div>
 
     <div class="section">
-      <h2>商品管理</h2>
+      <h2 style="display: flex; justify-content: space-between; align-items: center;">
+  <span>会計履歴</span>
+  <a href="/analytics.html" class="btn" style="background-color: #17a2b8; color: white; text-decoration: none;">売上分析</a>
+  </h2>
       <table>
         <thead>
           <tr><th>商品名</th><th>価格</th><th>色</th><th>操作</th></tr>
@@ -304,8 +307,8 @@
             const selectedColorEl = document.querySelector(`#edit-color-picker-${id} .color-box.selected`);
             const newColor = selectedColorEl ? selectedColorEl.style.backgroundColor : product.color;
 
-            if (!newName || !newPrice || newPrice < 0) {
-                alert("商品名と正しい価格を入力してください。");
+            if (!newName || !newPrice) {
+                alert("商品名と価格を入力してください。");
                 return;
             }
 

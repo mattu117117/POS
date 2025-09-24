@@ -192,6 +192,36 @@ app.post('/api/kitchen/order/:orderId/item/:productId/complete', async (req, res
     } catch(err) { res.status(500).json({ message: "更新エラー" }); }
 });
 
+// 売上分析データを取得
+app.get('/api/sales/analytics', async (req, res) => {
+    try {
+        const sales = await readData(SALES_FILE);
+        const analytics = {};
+
+        sales.forEach(sale => {
+            sale.items.forEach(item => {
+                if (!analytics[item.id]) {
+                    analytics[item.id] = {
+                        name: item.name,
+                        quantity: 0,
+                        totalRevenue: 0
+                    };
+                }
+                analytics[item.id].quantity++;
+                analytics[item.id].totalRevenue += item.price;
+            });
+        });
+
+        // オブジェクトを配列に変換して返す
+        res.json(Object.values(analytics));
+    } catch (err) {
+        console.error("売上分析データ生成エラー:", err);
+        res.status(500).json({ message: "分析データの生成に失敗しました。" });
+    }
+});
+
+// --- (ここまで追加) ---
+
 // 全ての会計履歴を取得
 app.get('/api/sales/history', async (req, res) => {
     const sales = await readData(SALES_FILE);
