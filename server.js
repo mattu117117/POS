@@ -1,3 +1,5 @@
+// server.js
+
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
@@ -20,7 +22,7 @@ async function readData(filePath) {
     return JSON.parse(data);
   } catch (err) {
     if (err.code === 'ENOENT') {
-      return []; 
+      return [];
     }
     throw err;
   }
@@ -73,7 +75,7 @@ app.put('/api/products/:id', async (req, res) => {
 
         // 新しい情報で商品を更新
         const updatedProduct = {
-            ...products[productIndex], 
+            ...products[productIndex],
             name: req.body.name,
             price: parseInt(req.body.price, 10),
             color: req.body.color // 色の更新を追加
@@ -142,7 +144,7 @@ app.put('/api/sales/:id', async (req, res) => {
         if (saleIndex === -1) return res.status(404).json({ message: "該当の会計が見つかりません。" });
         const { items: updatedItems } = req.body;
         if (!Array.isArray(updatedItems)) return res.status(400).json({ message: "無効なデータ形式です。" });
-        
+
         let newTotal = 0;
         updatedItems.forEach(item => {
             const productInfo = products.find(p => p.id === item.id);
@@ -197,8 +199,10 @@ app.get('/api/sales/analytics', async (req, res) => {
     try {
         const sales = await readData(SALES_FILE);
         const analytics = {};
+        let totalSalesAmount = 0; // 売上合計金額を初期化
 
         sales.forEach(sale => {
+            totalSalesAmount += sale.finalTotal; // 各売上の最終合計金額を加算
             sale.items.forEach(item => {
                 if (!analytics[item.id]) {
                     analytics[item.id] = {
@@ -212,8 +216,11 @@ app.get('/api/sales/analytics', async (req, res) => {
             });
         });
 
-        // オブジェクトを配列に変換して返す
-        res.json(Object.values(analytics));
+        // オブジェクトを配列に変換し、合計金額と共に返す
+        res.json({
+            analytics: Object.values(analytics),
+            totalSalesAmount: totalSalesAmount
+        });
     } catch (err) {
         console.error("売上分析データ生成エラー:", err);
         res.status(500).json({ message: "分析データの生成に失敗しました。" });

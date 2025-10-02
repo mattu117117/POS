@@ -24,6 +24,11 @@
     <a href="/admin.html" class="back-link">&larr; 管理画面に戻る</a>
 
     <div class="section">
+        <h2>総売上高</h2>
+        <p id="total-sales-amount" style="font-size: 24px; font-weight: bold;">計算中...</p>
+    </div>
+
+    <div class="section">
       <h2>商品別 売上ランキング</h2>
       <div class="chart-container">
         <canvas id="salesChart"></canvas>
@@ -48,12 +53,16 @@
         const response = await fetch('/api/sales/analytics');
         if (!response.ok) throw new Error('データの取得に失敗しました。');
         const data = await response.json();
-        
-        // データを売上金額で降順にソート
-        data.sort((a, b) => b.totalRevenue - a.totalRevenue);
 
-        renderTable(data);
-        renderChart(data);
+        const productAnalytics = data.analytics;
+        const totalSalesAmount = data.totalSalesAmount;
+
+        // データを売上金額で降順にソート
+        productAnalytics.sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+        document.getElementById('total-sales-amount').textContent = `${totalSalesAmount.toLocaleString()} 円`;
+        renderTable(productAnalytics);
+        renderChart(productAnalytics);
       } catch (error) {
         console.error('分析データ取得エラー:', error);
         alert(error.message);
