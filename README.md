@@ -32,9 +32,9 @@
 ![POS画面](images/pos-screen.png)
 
 ### 管理画面
-![管理画面](images/admin-screen1.png)
-(images/admin-screen2.png)
-(images/admin-screen3.png)
+![管理画面1](images/admin-screen1.png)
+![管理画面2](images/admin-screen2.png)
+![管理画面3](images/admin-screen3.png)
 
 ### キッチン画面
 ![キッチン画面](images/kitchen-screen.png)
