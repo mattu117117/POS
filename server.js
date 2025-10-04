@@ -73,12 +73,11 @@ app.put('/api/products/:id', async (req, res) => {
             return res.status(404).json({ message: "該当の商品が見つかりません。" });
         }
 
-        // 新しい情報で商品を更新
         const updatedProduct = {
             ...products[productIndex],
             name: req.body.name,
             price: parseInt(req.body.price, 10),
-            color: req.body.color // 色の更新を追加
+            color: req.body.color
         };
         products[productIndex] = updatedProduct;
 
@@ -113,15 +112,19 @@ app.get('/api/next-order-id', async (req, res) => {
 app.post('/api/sales', async (req, res) => {
   try {
     const sales = await readData(SALES_FILE);
+    const itemsWithUniqueId = req.body.cart.map((item, index) => ({
+      ...item,
+      orderItemId: `${Date.now()}-${index}`
+    }));
+
     const itemStatus = {};
-    const uniqueProductIds = [...new Set(req.body.cart.map(item => item.id))];
-    uniqueProductIds.forEach(id => {
-      itemStatus[id] = 'undelivered';
+    itemsWithUniqueId.forEach(item => {
+      itemStatus[item.orderItemId] = 'undelivered';
     });
 
     const newSale = {
       id: await getNextId(SALES_FILE),
-      items: req.body.cart,
+      items: itemsWithUniqueId,
       itemStatus: itemStatus,
       total: req.body.total,
       discount: req.body.discount,
@@ -172,15 +175,15 @@ app.get('/api/kitchen/undelivered', async (req, res) => {
 });
 
 // 特定の注文の特定商品を完了にする
-app.post('/api/kitchen/order/:orderId/item/:productId/complete', async (req, res) => {
+app.post('/api/kitchen/order/:orderId/item/:orderItemId/complete', async (req, res) => {
     try {
         const sales = await readData(SALES_FILE);
         const orderId = parseInt(req.params.orderId, 10);
-        const productId = req.params.productId;
+        const orderItemId = req.params.orderItemId;
         const saleIndex = sales.findIndex(s => s.id === orderId);
         if (saleIndex > -1) {
-            if (sales[saleIndex].itemStatus && sales[saleIndex].itemStatus[productId]) {
-                sales[saleIndex].itemStatus[productId] = 'delivered';
+            if (sales[saleIndex].itemStatus && sales[saleIndex].itemStatus[orderItemId]) {
+                sales[saleIndex].itemStatus[orderItemId] = 'delivered';
             }
             const allDelivered = Object.values(sales[saleIndex].itemStatus).every(status => status === 'delivered');
             if (allDelivered) {
@@ -194,15 +197,35 @@ app.post('/api/kitchen/order/:orderId/item/:productId/complete', async (req, res
     } catch(err) { res.status(500).json({ message: "更新エラー" }); }
 });
 
+// 特定の注文の特定商品を未提供に戻す
+app.post('/api/kitchen/order/:orderId/item/:orderItemId/incomplete', async (req, res) => {
+    try {
+        const sales = await readData(SALES_FILE);
+        const orderId = parseInt(req.params.orderId, 10);
+        const orderItemId = req.params.orderItemId;
+        const saleIndex = sales.findIndex(s => s.id === orderId);
+        if (saleIndex > -1) {
+            if (sales[saleIndex].itemStatus && sales[saleIndex].itemStatus[orderItemId]) {
+                sales[saleIndex].itemStatus[orderItemId] = 'undelivered';
+            }
+            sales[saleIndex].status = '未提供';
+            await writeData(SALES_FILE, sales);
+            res.json({ message: '商品を更新しました。'});
+        } else {
+            res.status(404).json({ message: '該当の注文が見つかりません。'});
+        }
+    } catch(err) { res.status(500).json({ message: "更新エラー" }); }
+});
+
 // 売上分析データを取得
 app.get('/api/sales/analytics', async (req, res) => {
     try {
         const sales = await readData(SALES_FILE);
         const analytics = {};
-        let totalSalesAmount = 0; // 売上合計金額を初期化
+        let totalSalesAmount = 0;
 
         sales.forEach(sale => {
-            totalSalesAmount += sale.finalTotal; // 各売上の最終合計金額を加算
+            totalSalesAmount += sale.finalTotal;
             sale.items.forEach(item => {
                 if (!analytics[item.id]) {
                     analytics[item.id] = {
@@ -216,7 +239,6 @@ app.get('/api/sales/analytics', async (req, res) => {
             });
         });
 
-        // オブジェクトを配列に変換し、合計金額と共に返す
         res.json({
             analytics: Object.values(analytics),
             totalSalesAmount: totalSalesAmount
@@ -226,8 +248,6 @@ app.get('/api/sales/analytics', async (req, res) => {
         res.status(500).json({ message: "分析データの生成に失敗しました。" });
     }
 });
-
-// --- (ここまで追加) ---
 
 // 全ての会計履歴を取得
 app.get('/api/sales/history', async (req, res) => {
